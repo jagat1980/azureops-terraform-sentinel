@@ -148,7 +148,7 @@ tests = [
     ("6. Microsoft Defender for Cloud Security Alert", defender_security_payload)
 ]
 
-print(f"🚀 Testing AzureOps Swarm Triage Endpoint: {URL}\n")
+print(f"[*] Testing AzureOps Swarm Triage Endpoint: {URL}\n")
 for name, payload in tests:
     print(f"Executing: {name} ...")
     try:
