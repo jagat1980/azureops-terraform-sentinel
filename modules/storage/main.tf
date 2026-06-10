@@ -51,11 +51,11 @@ resource "azurerm_storage_account" "vulnerable_storage" {
   }
 }
 
-# 4. Public Anonymous Access Container
+# 4. Private Access Container
 resource "azurerm_storage_container" "anonymous_container" {
   name                  = "azure-webjobs-hosts"
   storage_account_id    = azurerm_storage_account.vulnerable_storage.id
   
-  # DRIFT PROFILE: Exposes full listing access anonymously to the internet
-  container_access_type = "container" 
+  # Explicitly disables anonymous public access
+  container_access_type = "private"
 }
