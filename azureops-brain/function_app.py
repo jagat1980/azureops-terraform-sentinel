@@ -122,7 +122,9 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
     # PHASE 4: Cognitive PR Copywriting & Git Branch Commit Pipeline
     # -----------------------------------------------------------------
     try:
-        new_branch = f"secops-swarm-fix-{incident_id.lower().replace(' ', '-')}"
+        import time
+        timestamp = int(time.time())
+        new_branch = f"secops-swarm-fix-{incident_id.lower().replace(' ', '-')}-{timestamp}"
         main_branch = repo.get_git_ref("heads/main")
         
         # 1. Create a dynamic security branch tracking timeline
