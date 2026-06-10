@@ -1,0 +1,29 @@
+# Azure Functions deployment ignore file
+# Prevents local-only artifacts from being deployed to Azure
+
+# Local settings (secrets are configured via App Settings in Azure Portal)
+local.settings.json
+
+# Python virtual environment
+.venv/
+
+# Python bytecode
+__pycache__/
+
+# Local package installs (Azure deploys from requirements.txt)
+.python_packages/
+
+# IDE / editor
+.vscode/
+.idea/
+*.pyc
+
+# Git
+.git/
+.gitignore
+
+# Tests
+tests/
+
+# Documentation
+*.md

@@ -24,3 +24,27 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# =============================================
+# Azure Functions & Python
+# =============================================
+
+# Plaintext secrets / credentials (NEVER commit)
+keys
+local.settings.json
+
+# Python virtual environments
+.venv/
+azureops-brain/.venv/
+
+# Python bytecode cache
+__pycache__/
+azureops-brain/__pycache__/
+
+# Azure Functions local package installs
+.python_packages/
+azureops-brain/.python_packages/
+
+# Azure Functions artifacts
+bin/
+obj/
