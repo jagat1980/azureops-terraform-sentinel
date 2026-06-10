@@ -42,20 +42,20 @@ resource "azurerm_storage_account" "vulnerable_storage" {
 
   # DRIFT PROFILE: Allows nested child assets to bypass private settings
   allow_nested_items_to_be_public = true
-  
-  min_tls_version                 = "TLS1_2"
-  https_traffic_only_enabled      = true
+
+  min_tls_version            = "TLS1_2"
+  https_traffic_only_enabled = true
 
   tags = {
     ComplianceRisk = "Intentional-Drift"
   }
 }
 
-# 4. Public Anonymous Access Container
+# 4. Private Access Container
 resource "azurerm_storage_container" "anonymous_container" {
-  name                  = "azure-webjobs-hosts"
-  storage_account_id    = azurerm_storage_account.vulnerable_storage.id
-  
-  # DRIFT PROFILE: Exposes full listing access anonymously to the internet
-  container_access_type = "container" 
+  name               = "azure-webjobs-hosts"
+  storage_account_id = azurerm_storage_account.vulnerable_storage.id
+
+  # Mitigation: disable anonymous public access
+  container_access_type = "private"
 }
