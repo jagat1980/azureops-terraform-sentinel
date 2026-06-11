@@ -8,10 +8,6 @@ terraform {
   }
 }
 
-# Explicitly defining the mandatory features block in the same file
-provider "azurerm" {
-  features {}
-}
 
 # 1. Random ID Generation
 resource "random_string" "unique_id" {

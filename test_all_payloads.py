@@ -7,7 +7,17 @@ URL = "http://localhost:7071/api/swarm-triage"
 if len(sys.argv) > 1:
     URL = sys.argv[1]
 
-# 1. Azure Monitor Activity Log Alert (Common Alert Schema)
+# Optional Function Key for Authenticated Endpoints (e.g. when deployed to Azure)
+FUNCTION_KEY = ""
+if len(sys.argv) > 2:
+    FUNCTION_KEY = sys.argv[2]
+
+# Build the request headers
+headers = {"Content-Type": "application/json"}
+if FUNCTION_KEY:
+    headers["x-functions-key"] = FUNCTION_KEY
+
+# 1. Azure Monitor Activity Log Alert (Common Alert Schema - Storage Account)
 activity_log_payload = {
     "schemaId": "azureMonitorCommonAlertSchema",
     "data": {
@@ -29,7 +39,7 @@ activity_log_payload = {
     }
 }
 
-# 2. Azure Monitor Metric Alert (e.g., General Metric alert)
+# 2. Azure Monitor Metric Alert (e.g., General Metric alert - Storage Account)
 metric_alert_payload = {
     "schemaId": "azureMonitorCommonAlertSchema",
     "data": {
@@ -51,7 +61,7 @@ metric_alert_payload = {
     }
 }
 
-# 3. Azure Service Health Alert
+# 3. Azure Service Health Alert (Storage Account service issue)
 service_health_payload = {
     "schemaId": "azureMonitorCommonAlertSchema",
     "data": {
@@ -73,7 +83,7 @@ service_health_payload = {
     }
 }
 
-# 4. Log Analytics Based Alert (e.g., Diagnostic Logging Alert)
+# 4. Log Analytics Based Alert (e.g., Diagnostic Logging Alert - Storage Account)
 log_analytics_payload = {
     "schemaId": "azureMonitorCommonAlertSchema",
     "data": {
@@ -95,7 +105,7 @@ log_analytics_payload = {
     }
 }
 
-# 5. CPU Threshold Alert (Specific Metric Alert)
+# 5. CPU Threshold Alert (Specific Metric Alert - VM Compute Resource)
 cpu_threshold_payload = {
     "schemaId": "azureMonitorCommonAlertSchema",
     "data": {
@@ -106,18 +116,18 @@ cpu_threshold_payload = {
             "signalType": "Metric",
             "monitoringService": "Platform Metrics",
             "alertTargetIDs": [
-                "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Compute/virtualMachines/stdriftabc123"
+                "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Compute/virtualMachines/vm-drift-test"
             ],
             "configurationItems": [
-                "stdriftabc123"
+                "vm-drift-test"
             ],
-            "description": "CPU percentage usage has exceeded 90% threshold limit.",
+            "description": "CPU percentage usage has exceeded 90% threshold limit, password authentication is active and vulnerable.",
             "eventDateTime": "2026-06-10T16:00:00Z"
         }
     }
 }
 
-# 6. Microsoft Defender for Cloud Security Alert
+# 6. Microsoft Defender for Cloud Security Alert (Storage Account)
 defender_security_payload = {
     "schemaId": "azureMonitorCommonAlertSchema",
     "data": {
@@ -139,20 +149,70 @@ defender_security_payload = {
     }
 }
 
+# 7. Network Security Group Port Exposure Alert (Network Resource)
+nsg_exposure_payload = {
+    "schemaId": "azureMonitorCommonAlertSchema",
+    "data": {
+        "essentials": {
+            "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/nsg-port-007",
+            "alertRule": "Network Security Group Insecure Port Access Rule",
+            "severity": "Sev1",
+            "signalType": "Activity Log",
+            "monitoringService": "Activity Log",
+            "alertTargetIDs": [
+                "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Network/networkSecurityGroups/nsg-landingzone-drift"
+            ],
+            "configurationItems": [
+                "nsg-landingzone-drift"
+            ],
+            "description": "Network Security Group rule allows inbound ports 22 and 3389 from any source internet address prefix (*).",
+            "eventDateTime": "2026-06-10T16:00:00Z"
+        }
+    }
+}
+
+# 8. SQL Database Firewall Open Alert (Database Resource)
+sql_firewall_payload = {
+    "schemaId": "azureMonitorCommonAlertSchema",
+    "data": {
+        "essentials": {
+            "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/sql-firewall-008",
+            "alertRule": "SQL Server Firewall Rule Policy Violation",
+            "severity": "Sev1",
+            "signalType": "Activity Log",
+            "monitoringService": "Activity Log",
+            "alertTargetIDs": [
+                "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Sql/servers/sqlserver-drift-test"
+            ],
+            "configurationItems": [
+                "sqlserver-drift-test"
+            ],
+            "description": "SQL firewall rule AllowAllInternet is configured to permit unrestricted public database access (0.0.0.0 to 255.255.255.255).",
+            "eventDateTime": "2026-06-10T16:00:00Z"
+        }
+    }
+}
+
 tests = [
-    ("1. Azure Monitor Activity Log Alert", activity_log_payload),
-    ("2. Azure Monitor Metric Alert", metric_alert_payload),
-    ("3. Service Health Alert", service_health_payload),
-    ("4. Log Analytics/Diagnostic Logging Alert", log_analytics_payload),
-    ("5. CPU Threshold Alert", cpu_threshold_payload),
-    ("6. Microsoft Defender for Cloud Security Alert", defender_security_payload)
+    ("1. Azure Monitor Activity Log Alert (Storage)", activity_log_payload),
+    ("2. Azure Monitor Metric Alert (Storage)", metric_alert_payload),
+    ("3. Service Health Alert (Storage)", service_health_payload),
+    ("4. Log Analytics/Diagnostic Logging Alert (Storage)", log_analytics_payload),
+    ("5. CPU Threshold Alert (Compute/VM)", cpu_threshold_payload),
+    ("6. Microsoft Defender for Cloud Security Alert (Storage)", defender_security_payload),
+    ("7. Network Security Group Public Port Rule Alert (Network)", nsg_exposure_payload),
+    ("8. SQL Server Firewall Open Alert (Database)", sql_firewall_payload)
 ]
 
-print(f"[*] Testing AzureOps Swarm Triage Endpoint: {URL}\n")
+print(f"[*] Testing AzureOps Swarm Triage Endpoint: {URL}")
+if FUNCTION_KEY:
+    print("[*] Authentication Header (x-functions-key) Active.")
+print()
+
 for name, payload in tests:
     print(f"Executing: {name} ...")
     try:
-        response = requests.post(URL, json=payload, headers={"Content-Type": "application/json"})
+        response = requests.post(URL, json=payload, headers=headers)
         print(f"Status Code: {response.status_code}")
         print("Response:", response.text)
     except Exception as e:

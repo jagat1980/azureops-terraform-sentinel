@@ -4,6 +4,78 @@ This document provides complete instructions for deploying the Python-based SecO
 
 ---
 
+## 📐 End-to-End GitOps Architecture Blueprint
+
+The following diagram illustrates the lifecycle of a cloud security event, from ingestion of polymorphic alerts to dynamic Landing Zone targeting, ending in the Human-in-the-Loop approval gate:
+
+```mermaid
+graph TD
+    %% Telemetry Sources
+    subgraph Detection [1. DETECTION & INGEST]
+        DF[Defender for Cloud] --> |Security Alert| EG[Azure Event Grid]
+        LA[Log Analytics] --> |Diagnostic Log Drift| EG
+        MA[Azure Monitor Metrics] --> |CPU/Threshold Breached| EG
+        AL[Activity Log Alerts] --> |Storage Config Altered| EG
+        SH[Service Health] --> |Maintenance Event| EG
+    end
+
+    %% Webhook Endpoint & AI processing
+    subgraph Swarm [2. COGNITIVE SWARM ORCHESTRATOR]
+        EG --> |Secure Webhook AuthLevel.FUNCTION| FN[Azure Function Webhook]
+        FN --> |Get Repo Tree| GH_API[GitHub Tree API]
+        GH_API --> |FileList| FN
+        FN --> |Triage Alert & Select File| OpenAI1[Azure OpenAI Chat Completion]
+        OpenAI1 --> |incident_id, target_file_path| FN
+        FN --> |Fetch File Content| GH_Content[GitHub File Retrieval]
+        GH_Content --> |Raw HCL Code| FN
+        FN --> |Patch Vulnerability & Validate| OpenAI2[Azure OpenAI Patch Engineer]
+        OpenAI2 --> |Remediated HCL Code| FN
+        FN --> |Syntax Validation Check| VAL{HCL Syntax OK?}
+        VAL -->|No: Self-Correction| OpenAI2
+    end
+
+    %% Git Control Plane (PR human-in-the-loop gate)
+    subgraph GitOps [3. GIT CONTROL PLANE & HUMAN GATE]
+        VAL --> |Yes| BRANCH[Create Temp Git Branch]
+        BRANCH --> |Commit Code Fix| COMMIT[Commit Remediation]
+        COMMIT --> |Draft PR Description| OpenAI3[Azure OpenAI PR Copywriter]
+        OpenAI3 --> |Structured Markdown Analysis| PR[Open Pull Request]
+        PR --> |Blocker| GATE[SRE Human-in-the-Loop Review Gate]
+    end
+
+    %% CD Deployment Pipeline
+    subgraph Deploy [4. TRANSACTIONAL CI/CD]
+        GATE --> |Approve & Merge| MERGE[Merge PR to main]
+        MERGE --> |Trigger Pipeline| GHA[GitHub Actions / ADO Pipelines]
+        GHA --> |Execution Plan| PLAN[terraform plan]
+        PLAN --> |Idempotent Apply| APPLY[terraform apply]
+        APPLY --> |State Remedied| LIVE[Live Azure Environment]
+    end
+
+    classDef source fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef ai fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef git fill:#bfb,stroke:#333,stroke-width:2px;
+    classDef deploy fill:#fbb,stroke:#333,stroke-width:2px;
+    class DF,LA,MA,AL,SH source;
+    class FN,OpenAI1,OpenAI2,OpenAI3,VAL ai;
+    class GATE,PR,BRANCH,COMMIT git;
+    class GHA,PLAN,APPLY,LIVE deploy;
+```
+
+---
+
+## ⏱️ Realistic MTTR Breakdown
+
+By employing this automated GitOps model with a **Human-in-the-Loop (HITL)** gate, organizations dramatically lower their Mean Time to Remediate (MTTR) while preserving strict compliance boundaries:
+
+1. **Detection & Event Ingress (1 – 3 minutes)**: Telemetry systems scan the cloud environment, identify the drift, and publish the alert to Azure Event Grid.
+2. **Cognitive Swarm Orchestration (15 – 25 seconds)**: The Azure Function ingests the alert, identifies the exact file inside the Landing Zone codebase, generates the patched HCL, validates the syntax, and opens a Pull Request on GitHub.
+3. **SRE Peer Review & Approval (2 – 5 minutes)**: An engineer reviews the OpenAI-generated PR risk analysis, verifies the terraform diff, and clicks "Merge".
+4. **CI/CD Execution & Deployment (1 – 2 minutes)**: The GitHub Actions runner executes `terraform apply`, remediating the cloud infrastructure to align with Git source.
+5. **Total Remediation MTTR (~5 – 10 minutes)**: Historically, manual remediation cycles take between **24 to 72 hours**. This solution reduces that window to minutes.
+
+---
+
 ## 🛠️ Step 1: Local Development & Verification
 
 Before publishing to Azure, verify your function locally using the Core Tools.
@@ -12,7 +84,7 @@ Before publishing to Azure, verify your function locally using the Core Tools.
 - **Azure Functions Core Tools v4.x** installed.
 - **Python 3.10** or **3.11** installed.
 - Access to the target GitHub repository (`jagat1980/azureops-terraform-sentinel`).
-- Azure OpenAI service deployment credentials.
+- Azure OpenAI service credentials.
 
 ### 2. Configure Environment Variables
 Create or verify the `azureops-brain/local.settings.json` file:
@@ -48,7 +120,7 @@ To move from local testing to your Azure cloud tenant, follow these deployment s
 Run the following Azure CLI commands to spin up the required resources:
 
 ```bash
-# 1. Create a Resource Group (if you don't have one)
+# 1. Create a Resource Group
 az group create --name rg-azureops-secops --location eastus
 
 # 2. Create an Azure Storage Account (required by Function Apps)
@@ -58,7 +130,7 @@ az storage account create \
   --resource-group rg-azureops-secops \
   --sku Standard_LRS
 
-# 3. Create the Function App on Linux running Python 3.11 (v4 programming model)
+# 3. Create the Function App on Linux running Python 3.11 with secure system settings
 az functionapp create \
   --name func-secops-swarm-triage \
   --storage-account stazureopsfunc \
@@ -83,7 +155,7 @@ az functionapp config appsettings set --name func-secops-swarm-triage --resource
 ```
 
 ### 3. Publish Code to Azure
-Make sure you are logged into Azure via `az login`, navigate to the `azureops-brain/` directory, and run the publisher tool:
+Log into Azure via `az login`, navigate to the `azureops-brain/` directory, and run the publisher tool:
 
 ```powershell
 cd c:\myailearn\projects\azureops-test-harness\azureops-brain
@@ -94,23 +166,23 @@ func azure functionapp publish func-secops-swarm-triage
 
 ## ⚡ Step 3: Event Grid webhook Integration
 
-If triggering the remediation workflow from Azure Event Grid (e.g., Azure Policy or Sentinel alerts routed via Event Grid):
+If triggering the remediation workflow from Azure Event Grid:
 
 1. Go to **Azure Event Grid Partner Topics** / **System Topics**.
 2. Create an **Event Subscription**.
 3. Choose the **Webhook** Endpoint Type.
 4. Set the Endpoint URL to:
    ```
-   https://func-secops-swarm-triage.azurewebsites.net/api/swarm-triage
+   https://func-secops-swarm-triage.azurewebsites.net/api/swarm-triage?code=<FUNCTION_KEY>
    ```
-5. Click **Create**. Event Grid will trigger a handshake handshake check. The function contains native logic on lines 25–29 of [function_app.py](file:///c:/myailearn/projects/azureops-test-harness/azureops-brain/function_app.py#L25-L29) to intercept, validate, and respond to this verification request instantly.
+   *Note: Under AuthLevel.FUNCTION, the `code` query parameter contains the authorization host key generated by Azure Functions.*
+5. Click **Create**. Event Grid will trigger a handshake check. The function contains native logic on lines 47–51 of [function_app.py](file:///c:/myailearn/projects/azureops-test-harness/azureops-brain/function_app.py#L47-L51) to validate and respond to this verification request.
 
 ---
 
 ## 🧪 Step 4: Core Validation Test Cases
 
-### Test Case 1: Event Grid handshake Verification
-Ensure the HTTP endpoint properly responds to Event Grid handshake verification requests.
+Ensure the HTTP endpoint responds to Event Grid handshake verification requests.
 
 * **Target URL**: `http://localhost:7071/api/swarm-triage` (Local)
 * **HTTP Method**: `POST`
@@ -143,9 +215,9 @@ Ensure the HTTP endpoint properly responds to Event Grid handshake verification 
 
 ---
 
-## 🔮 Step 5: Advanced Polymorphic Alert Payload Testing
+## 🔮 Step 5: Landing Zone Polymorphic Alert Testing
 
-We have built a test runner script [test_all_payloads.py](file:///c:/myailearn/projects/azureops-test-harness/test_all_payloads.py) that you can run locally to verify how the Cognitive Triage handles multiple distinct Azure alert formats.
+We have built a test runner script [test_all_payloads.py](file:///c:/myailearn/projects/azureops-test-harness/test_all_payloads.py) that you can run locally to verify how the Cognitive Triage handles multiple distinct Azure alert formats across storage, compute, database, and network resources.
 
 ### Executing the Multi-Payload Test Runner
 Activate your virtual environment and run the test suite:
@@ -153,148 +225,12 @@ Activate your virtual environment and run the test suite:
 python c:\myailearn\projects\azureops-test-harness\test_all_payloads.py
 ```
 
-Here are the payloads represented in the script:
-
-### Payload 1: Azure Monitor Activity Log Alert (Common Alert Schema)
-Sent when an administrative activity (like configuration change or policy failure) occurs.
-```json
-{
-  "schemaId": "azureMonitorCommonAlertSchema",
-  "data": {
-    "essentials": {
-      "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/act-log-001",
-      "alertRule": "Storage Account Access Policy Drift Alert",
-      "severity": "Sev3",
-      "signalType": "Activity Log",
-      "monitoringService": "Activity Log",
-      "alertTargetIDs": [
-        "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Storage/storageAccounts/stdriftabc123"
-      ],
-      "configurationItems": [
-        "stdriftabc123"
-      ],
-      "description": "Storage account configuration changed to permit public blob access."
-    }
-  }
-}
-```
-
-### Payload 2: Azure Monitor Metric Alert
-Sent when system telemetry rules (e.g. storage transactions, ingress rates) are breached.
-```json
-{
-  "schemaId": "azureMonitorCommonAlertSchema",
-  "data": {
-    "essentials": {
-      "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/metric-alert-002",
-      "alertRule": "High Storage Account Transaction Volume",
-      "severity": "Sev2",
-      "signalType": "Metric",
-      "monitoringService": "Platform Metrics",
-      "alertTargetIDs": [
-        "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Storage/storageAccounts/stdriftabc123"
-      ],
-      "configurationItems": [
-        "stdriftabc123"
-      ],
-      "description": "The transactions count exceeded the threshold."
-    }
-  }
-}
-```
-
-### Payload 3: Azure Service Health Alert
-Sent when Microsoft notifies about platform service incidents or maintenance.
-```json
-{
-  "schemaId": "azureMonitorCommonAlertSchema",
-  "data": {
-    "essentials": {
-      "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/sh-003",
-      "alertRule": "Azure Storage Active Incident",
-      "severity": "Sev1",
-      "signalType": "Activity Log",
-      "monitoringService": "ServiceHealth",
-      "alertTargetIDs": [
-        "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Storage/storageAccounts/stdriftabc123"
-      ],
-      "configurationItems": [
-        "stdriftabc123"
-      ],
-      "description": "We are experiencing service performance degradation on Azure Storage resources in East US."
-    }
-  }
-}
-```
-
-### Payload 4: Log Analytics Based Alert (e.g., Diagnostic Logging Alert)
-Sent when log search queries detect anomalies (like suspicious configuration adjustments).
-```json
-{
-  "schemaId": "azureMonitorCommonAlertSchema",
-  "data": {
-    "essentials": {
-      "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/la-log-004",
-      "alertRule": "Diagnostic Logging Ingress Drift Detected",
-      "severity": "Sev2",
-      "signalType": "Log",
-      "monitoringService": "Log Analytics",
-      "alertTargetIDs": [
-        "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Storage/storageAccounts/stdriftabc123"
-      ],
-      "configurationItems": [
-        "stdriftabc123"
-      ],
-      "description": "Diagnostic log searching query found public access logs on stdriftabc123."
-    }
-  }
-}
-```
-
-### Payload 5: CPU Threshold Alert (Specific Metric Alert)
-Sent when compute resources cross performance metrics.
-```json
-{
-  "schemaId": "azureMonitorCommonAlertSchema",
-  "data": {
-    "essentials": {
-      "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/cpu-alert-005",
-      "alertRule": "High CPU Usage Warning",
-      "severity": "Sev2",
-      "signalType": "Metric",
-      "monitoringService": "Platform Metrics",
-      "alertTargetIDs": [
-        "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Compute/virtualMachines/stdriftabc123"
-      ],
-      "configurationItems": [
-        "stdriftabc123"
-      ],
-      "description": "CPU percentage usage has exceeded 90% threshold limit."
-    }
-  }
-}
-```
-
-### Payload 6: Microsoft Defender for Cloud Security Alert
-Sent when high-priority platform security detections identify exposed threat vectors.
-```json
-{
-  "schemaId": "azureMonitorCommonAlertSchema",
-  "data": {
-    "essentials": {
-      "alertId": "/subscriptions/test-sub/providers/Microsoft.AlertsManagement/alerts/def-sec-006",
-      "alertRule": "Defender Storage Account Protection Alert",
-      "severity": "Sev0",
-      "signalType": "Security",
-      "monitoringService": "Microsoft Defender for Cloud",
-      "alertTargetIDs": [
-        "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Storage/storageAccounts/stdriftabc123"
-      ],
-      "configurationItems": [
-        "stdriftabc123"
-      ],
-      "description": "Microsoft Defender has detected anonymous public read access enabled on standard storage account stdriftabc123."
-    }
-  }
-}
-```
+This script will run eight tests:
+1. **Azure Monitor Activity Log Alert (Storage)**
+2. **Azure Monitor Metric Alert (Storage)**
+3. **Service Health Alert (Storage)**
+4. **Log Analytics/Diagnostic Logging Alert (Storage)**
+5. **CPU Threshold Alert (Compute/VM)** - Targets `modules/compute/main.tf`
+6. **Microsoft Defender for Cloud Security Alert (Storage)**
+7. **Network Security Group Public Port Rule Alert (Network)** - Targets `modules/network/main.tf`
+8. **SQL Server Firewall Open Alert (Database)** - Targets `modules/database/main.tf`
