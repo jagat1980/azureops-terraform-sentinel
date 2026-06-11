@@ -20,10 +20,10 @@ resource "azurerm_mssql_server" "sql_server" {
 
 # 2. SQL Firewall Rule Exposing Database Publicly (Drift Profile)
 resource "azurerm_mssql_firewall_rule" "vulnerable_fw" {
-  name             = "AllowAllInternet"
-  server_id        = azurerm_mssql_server.sql_server.id
-  
-  # DRIFT PROFILE: Exposes database to the entire public internet
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "255.255.255.255"
+  name      = "AllowAllInternet"
+  server_id = azurerm_mssql_server.sql_server.id
+
+  # DRIFT PROFILE: Restricts database access to private network range
+  start_ip_address = "10.0.0.0"
+  end_ip_address   = "10.255.255.255"
 }
