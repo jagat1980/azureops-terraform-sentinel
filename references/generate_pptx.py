@@ -332,6 +332,108 @@ def create_presentation():
         r_p2.font.color.rgb = TEXT_MUTED
         r_p2.space_after = Pt(15)
 
+    # -----------------------------------------------------------------
+    # SLIDE 5: Cost Analysis & Total Cost of Ownership (Light Theme)
+    # -----------------------------------------------------------------
+    slide5 = prs.slides.add_slide(blank_layout)
+    
+    # Background
+    bg5 = slide5.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(13.333), Inches(7.5))
+    bg5.fill.solid()
+    bg5.fill.fore_color.rgb = LIGHT_BG
+    bg5.line.fill.background()
+
+    # Header
+    hdrBox5 = slide5.shapes.add_textbox(Inches(1.0), Inches(0.5), Inches(11.333), Inches(1.0))
+    htf5 = hdrBox5.text_frame
+    hp5 = htf5.paragraphs[0]
+    hp5.text = "Cost Analysis & Total Cost of Ownership"
+    hp5.font.size = Pt(28)
+    hp5.font.bold = True
+    hp5.font.color.rgb = TEXT_DARK
+    hp5.font.name = "Segoe UI"
+
+    # Left Column: One-Time Costs
+    leftBox5 = slide5.shapes.add_textbox(Inches(1.0), Inches(1.6), Inches(5.2), Inches(5.0))
+    ltf5 = leftBox5.text_frame
+    ltf5.word_wrap = True
+
+    lc_p1 = ltf5.paragraphs[0]
+    lc_p1.text = "ONE-TIME SETUP COSTS"
+    lc_p1.font.size = Pt(16)
+    lc_p1.font.bold = True
+    lc_p1.font.color.rgb = TEAL_COLOR
+    lc_p1.space_after = Pt(15)
+
+    one_time_items = [
+        ("Azure Logical Resource Groups", "$0.00"),
+        ("GitHub / Azure DevOps Repositories", "$0.00"),
+        ("Telemetry Routing (Monitor/Defender)", "$0.00"),
+        ("Initial Python App Setup & Deploy", "$0.00"),
+        ("TOTAL ONE-TIME EXPENSES", "$0.00 (Zero-Cost Setup)")
+    ]
+
+    for title, cost in one_time_items:
+        p_item = ltf5.add_paragraph()
+        p_item.text = f"• {title}: "
+        p_item.font.size = Pt(13)
+        p_item.font.color.rgb = TEXT_DARK
+        p_item.space_after = Pt(2)
+        
+        # Add bold cost text
+        run = p_item.add_run()
+        run.text = cost
+        run.font.bold = True
+        run.font.color.rgb = GREEN_COLOR if "Zero-Cost" in cost or "$0.00" in cost else TEXT_DARK
+        p_item.space_after = Pt(8)
+
+    # Right Column: Monthly Operational Costs
+    rightBox5 = slide5.shapes.add_textbox(Inches(6.8), Inches(1.6), Inches(5.5), Inches(5.0))
+    rtf5 = rightBox5.text_frame
+    rtf5.word_wrap = True
+
+    rc_p1 = rtf5.paragraphs[0]
+    rc_p1.text = "MONTHLY RECURRING COSTS (1k Events)"
+    rc_p1.font.size = Pt(16)
+    rc_p1.font.bold = True
+    rc_p1.font.color.rgb = TEAL_COLOR
+    rc_p1.space_after = Pt(15)
+
+    recurring_items = [
+        ("Azure Event Grid (Telemetry Router)", "$0.00 (Under 100k events/mo free)"),
+        ("Azure Functions (Serverless Compute)", "~$0.80 (Pay-as-you-go executions)"),
+        ("Azure Storage (Logs & Meta)", "~$0.50 (Hot LRS standard storage)"),
+        ("Azure OpenAI Service (GPT-4o API)", "~$39.00 (Estimated token utilization)"),
+        ("TOTAL ESTIMATED MONTHLY OVERHEAD", "~$40.30 / Month")
+    ]
+
+    for title, cost in recurring_items:
+        p_item = rtf5.add_paragraph()
+        p_item.text = f"• {title}: "
+        p_item.font.size = Pt(12)
+        p_item.font.color.rgb = TEXT_DARK
+        
+        run = p_item.add_run()
+        run.text = cost
+        run.font.bold = True
+        run.font.color.rgb = TEAL_COLOR if "/ Month" in cost or "mo free" in cost else TEXT_DARK
+        p_item.space_after = Pt(8)
+
+    # Add TCO Comparison callout box at the bottom
+    callout = slide5.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(1.0), Inches(5.8), Inches(11.333), Inches(1.0))
+    callout.fill.solid()
+    callout.fill.fore_color.rgb = DARK_BG
+    callout.line.fill.background()
+    ctf = callout.text_frame
+    ctf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    cp = ctf.paragraphs[0]
+    cp.text = "TCO COMPARISON: Auto-remediation costs ~$0.04 per incident vs. ~$150 - $300 in engineering labor per manual remediation ticket. (A 99.98% operational cost reduction)."
+    cp.font.size = Pt(12.5)
+    cp.font.bold = True
+    cp.font.color.rgb = TEXT_LIGHT
+    cp.font.name = "Segoe UI"
+    cp.alignment = PP_ALIGN.CENTER
+
     # Save Presentation
     prs.save("references/azureops_gitops_architecture.pptx")
     print("[*] Presentation generated successfully: references/azureops_gitops_architecture.pptx")

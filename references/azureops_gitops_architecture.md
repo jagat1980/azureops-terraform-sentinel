@@ -97,3 +97,20 @@ graph TD
 | **REMEDIATING & ORCHESTRATION** | Azure Function (Python) & GitHub API | The function checks out the repository context, passes the affected `.tf` block to OpenAI, handles branch creation, commits the altered declarative state, and programmatically spawns a Pull Request. | **Footprint #2: Generative HCL Patching**<br/>Analyzes existing configurations against policy violations and modifies specific attributes safely (e.g. turning public access off, restricting security group ports). |
 | **VERIFYING & CI/CD** | CI/CD Engine & Terraform Core <br/>`terraform plan -out=tfplan` | Triggered dynamically upon PR creation. Runs transactional dry-runs against the active `.tfstate` storage backend to verify structural integrity, syntactic validity, and identify blast radius before changes touch target subscriptions. | *None.*<br/>(Decoupled completely from LLM code generation to enforce strict deterministic safeguards and state file alignment). |
 | **REPORTING & AUDIT** | Pull Request Interface & Git Ledger | Consolidates automated analytical breakdowns directly within the standard engineering workflow. The merged branch generates an immutable, cryptographically signed ledger record inside the version control database. | **Footprint #3: PR Copywriting**<br/>Generates comprehensive Markdown documentation detailing Business Impact Summaries, blast radiuses, and compliance review metadata for SRE sign-off. |
+
+---
+
+## 3. Cost Analysis & Total Cost of Ownership (TCO)
+
+This section maps the financial impact of running this autonomous remediation solution:
+
+### One-Time Setup Costs
+* **All Services (Azure, GitHub, Event Grid)**: **$0.00** (Leverages standard native serverless APIs and existing standard licensing).
+
+### Monthly Recurring Operational Costs (Assuming 1,000 incidents/month)
+* **Azure Event Grid (Ingestion)**: **$0.00 / month** (First 100k events/mo are free).
+* **Azure Functions (Serverless Compute)**: **~$0.80 / month** (First 1M requests/mo are free).
+* **Azure Storage (Logs & Meta)**: **~$0.50 / month** (Standard Hot LRS storage).
+* **Azure OpenAI Service (GPT-4o)**: **~$39.00 / month** (Token pay-as-you-go).
+* **Total Cost**: **~$40.30 / month** (Avg. **$0.04** per auto-remediation compared to **$150+ in engineering labor** per manual remediation).
+
