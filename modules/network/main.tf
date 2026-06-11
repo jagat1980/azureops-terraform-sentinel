@@ -14,7 +14,7 @@ resource "azurerm_network_security_group" "vulnerable_nsg" {
   location            = "centralindia"
   resource_group_name = "rg-azureops-drift-test"
 
-  # DRIFT PROFILE: Allows SSH inbound from anywhere on the internet
+  # DRIFT PROFILE: Allows SSH inbound from corporate network
   security_rule {
     name                       = "allow-ssh-public"
     priority                   = 100
@@ -23,11 +23,11 @@ resource "azurerm_network_security_group" "vulnerable_nsg" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
-    source_address_prefix      = "*"
+    source_address_prefix      = "10.0.0.0/8"
     destination_address_prefix = "*"
   }
 
-  # DRIFT PROFILE: Allows RDP inbound from anywhere on the internet
+  # DRIFT PROFILE: Allows RDP inbound from corporate network
   security_rule {
     name                       = "allow-rdp-public"
     priority                   = 110
@@ -36,7 +36,7 @@ resource "azurerm_network_security_group" "vulnerable_nsg" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "3389"
-    source_address_prefix      = "*"
+    source_address_prefix      = "10.0.0.0/8"
     destination_address_prefix = "*"
   }
 
