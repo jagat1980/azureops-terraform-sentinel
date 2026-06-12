@@ -1,0 +1,91 @@
+name: "SecOps Swarm: GitOps Remediation CI/CD"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write # Required to post plan output comments on Pull Requests
+
+jobs:
+  terraform:
+    name: "Terraform GitOps Pipeline"
+    runs-on: ubuntu-latest
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+    steps:
+      # 1. Checkout repository source code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup Terraform CLI environment
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      # 3. Initialize working directory (child modules and providers)
+      - name: Terraform Init
+        run: terraform init
+
+      # 4. Enforce standard HCL formatting rules
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      # 5. Validate structural syntax rules
+      - name: Terraform Validate
+        run: terraform validate
+
+      # 6. Generate execution plan (Dry-Run check on PRs)
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
+        id: plan
+        run: terraform plan -no-color
+        continue-on-error: true
+
+      # 7. Post Plan details directly to the Pull Request for SRE audit trail
+      - name: Post Plan to Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### 🔍 Terraform Plan Dry-Run Result
+            * **Status**: \`${{ steps.plan.outcome }}\`
+            * **Action Event**: \`${{ github.event_name }}\`
+            
+            <details><summary>Show Full Execution Plan</summary>
+            
+            \`\`\`hcl
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+            
+            </details>
+            
+            *Pushed by: @${{ github.actor }}*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      # 8. Hard fail the pipeline if the plan execution failed
+      - name: Verify Plan Outcome
+        if: github.event_name == 'pull_request' && steps.plan.outcome == 'failure'
+        run: exit 1
+
+      # 9. Deploy auto-remediation updates on PR merge to main branch
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
