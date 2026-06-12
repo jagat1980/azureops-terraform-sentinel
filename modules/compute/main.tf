@@ -36,7 +36,43 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
     version   = "latest"
   }
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   tags = {
     ComplianceRisk = "Password-Authentication-Enabled"
   }
+}
+
+resource "azurerm_monitor_data_collection_rule" "vm_heartbeat_dcr" {
+  name                = "dcr-vm-heartbeat"
+  resource_group_name = "rg-azureops-drift-test"
+  location            = "centralindia"
+
+  destinations {
+    azure_monitor_metrics {
+      name = "heartbeatMetricsDestination"
+    }
+  }
+
+  data_flow {
+    streams      = ["Microsoft-Heartbeat"]
+    destinations = ["heartbeatMetricsDestination"]
+  }
+
+  data_sources {
+    performance_counter {
+      name                          = "heartbeatDataSource"
+      streams                       = ["Microsoft-Heartbeat"]
+      sampling_frequency_in_seconds = 60
+      counter_specifiers            = ["\\Heartbeat"]
+    }
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "vm_heartbeat_assoc" {
+  name                    = "dcra-vm-heartbeat"
+  target_resource_id      = azurerm_linux_virtual_machine.vulnerable_vm.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.vm_heartbeat_dcr.id
 }
