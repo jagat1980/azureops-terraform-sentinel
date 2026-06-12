@@ -463,8 +463,18 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
         pr_markdown_body = pr_doc_response.choices[0].message.content
 
         # 4. Programmatically Open the Pull Request human gate
+        # Extract a clean, concise alert description (truncate if too long)
+        clean_vuln = vulnerability.replace("[SAMPLE ALERT] ", "").strip()
+        # Clean up any potential markdown ticks or double quotes
+        clean_vuln = clean_vuln.replace("`", "").replace('"', "")
+        if len(clean_vuln) > 60:
+            clean_vuln = clean_vuln[:57] + "..."
+            
+        # Shorten GUID for human readability in PR title (similar to a Git commit hash)
+        short_id = incident_id.split("/")[-1].split("-")[0].upper() if "-" in incident_id else incident_id.upper()
+
         pr = repo.create_pull(
-            title=f"🚨 SecOps Auto-Fix [{incident_id.upper()}]: Remediate Drift on {target_asset}",
+            title=f"🚨 SecOps Auto-Fix [{short_id}]: {clean_vuln} on {target_asset}",
             body=pr_markdown_body,
             head=new_branch,
             base="main"
