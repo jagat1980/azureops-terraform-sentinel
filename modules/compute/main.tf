@@ -16,6 +16,7 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
   size                            = "Standard_B1s"
   admin_username                  = "azureadmin"
   admin_password                  = "P@ssw0rd1234!"
+  vm_agent_platform_updates_enabled = true
   
   # DRIFT PROFILE: Password authentication is enabled instead of SSH keys
   disable_password_authentication = false
