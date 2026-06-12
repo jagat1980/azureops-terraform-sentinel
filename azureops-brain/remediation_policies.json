@@ -1,0 +1,20 @@
+{
+    "_description": "Remediation Policy Engine for AzureOps SecOps Swarm. Maps Azure resource providers to Terraform module paths and specific remediation instructions. For resource types NOT listed here, the system falls back to LLM-based cognitive triage and generic remediation.",
+
+    "Microsoft.Storage": {
+        "module_path": "modules/storage/",
+        "remediation_rules": "Ensure container_access_type is explicitly set to 'private'. Set allow_nested_items_to_be_public to false. Do NOT alter any random_string resources, provider blocks, or resource group scopes."
+    },
+    "Microsoft.Compute": {
+        "module_path": "modules/compute/",
+        "remediation_rules": "Set disable_password_authentication = true. Remove or redact any hardcoded admin_password values by replacing with a placeholder comment. Do NOT alter os_disk, source_image_reference, network_interface_ids, or resource group scopes."
+    },
+    "Microsoft.Network": {
+        "module_path": "modules/network/",
+        "remediation_rules": "For NSG security_rule blocks exposing ports 22 (SSH) or 3389 (RDP) with source_address_prefix = '*': change source_address_prefix to '10.0.0.0/8' to restrict to corporate network. Do NOT delete the rules entirely; restrict them. Do NOT alter resource group scopes or tags."
+    },
+    "Microsoft.Sql": {
+        "module_path": "modules/database/",
+        "remediation_rules": "Narrow open firewall rules: change start_ip_address to '10.0.0.0' and end_ip_address to '10.255.255.255'. Do NOT alter server authentication settings, version, or administrator credentials."
+    }
+}

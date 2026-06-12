@@ -20,15 +20,19 @@ graph TD
     end
 
     %% Webhook Endpoint & AI processing
-    subgraph Swarm [2. COGNITIVE SWARM ORCHESTRATOR]
+    subgraph Swarm [2. HYBRID SWARM ORCHESTRATOR]
         EG --> |Secure Webhook AuthLevel.FUNCTION| FN[Azure Function Webhook]
         FN --> |Get Repo Tree| GH_API[GitHub Tree API]
         GH_API --> |FileList| FN
-        FN --> |Triage Alert & Select File| OpenAI1[Azure OpenAI Chat Completion]
+        FN --> |Tier 1: Deterministic Parsing| DET[Pure Python Parser]
+        DET -.-> |Fallback| OpenAI1[Azure OpenAI Cognitive Triage]
+        DET --> |incident_id, target_file_path| FN
         OpenAI1 --> |incident_id, target_file_path| FN
         FN --> |Fetch File Content| GH_Content[GitHub File Retrieval]
         GH_Content --> |Raw HCL Code| FN
-        FN --> |Patch Vulnerability & Validate| OpenAI2[Azure OpenAI Patch Engineer]
+        FN --> |Load Remediation Policy| POL[remediation_policies.json]
+        POL --> |Rules| OpenAI2[Azure OpenAI Patch Engineer]
+        FN --> |Patch Vulnerability & Validate| OpenAI2
         OpenAI2 --> |Remediated HCL Code| FN
         FN --> |Syntax Validation Check| VAL{HCL Syntax OK?}
         VAL -->|No: Self-Correction| OpenAI2
@@ -69,7 +73,7 @@ graph TD
 By employing this automated GitOps model with a **Human-in-the-Loop (HITL)** gate, organizations dramatically lower their Mean Time to Remediate (MTTR) while preserving strict compliance boundaries:
 
 1. **Detection & Event Ingress (1 – 3 minutes)**: Telemetry systems scan the cloud environment, identify the drift, and publish the alert to Azure Event Grid.
-2. **Cognitive Swarm Orchestration (15 – 25 seconds)**: The Azure Function ingests the alert, identifies the exact file inside the Landing Zone codebase, generates the patched HCL, validates the syntax, and opens a Pull Request on GitHub.
+2. **Hybrid Swarm Orchestration (10 – 15 seconds)**: The Azure Function ingests the alert using a tiered approach. Known alert schemas are parsed deterministically (0ms, 0 tokens), while unrecognized schemas fall back to LLM cognitive routing. The function then fetches the file, injects config-driven remediation rules, generates the patch, validates the HCL syntax, and opens a PR.
 3. **SRE Peer Review & Approval (2 – 5 minutes)**: An engineer reviews the OpenAI-generated PR risk analysis, verifies the terraform diff, and clicks "Merge".
 4. **CI/CD Execution & Deployment (1 – 2 minutes)**: The GitHub Actions runner executes `terraform apply`, remediating the cloud infrastructure to align with Git source.
 5. **Total Remediation MTTR (~5 – 10 minutes)**: Historically, manual remediation cycles take between **24 to 72 hours**. This solution reduces that window to minutes.
@@ -260,9 +264,9 @@ Operating under a serverless, pay-as-you-go architecture, the system remains dor
 | **Azure Event Grid** | Basic (First 100k events free; then $0.60/M) | ~1,000 alert routings | **$0.00** |
 | **Azure Functions (Serverless)** | Premium/Consumption (1M free executions, then $0.20/M; 400k GB-sec free) | ~1,000 executions (avg. 30s at 1.5GB) | **~$0.80** |
 | **Azure Storage (Metadata & Logs)** | Hot LRS ($0.02 / GB + transaction costs) | ~2 GB active storage & operational logs | **~$0.50** |
-| **Azure OpenAI Service** | GPT-4o Pay-as-you-go ($5.00/1M input, $15.00/1M output tokens) | ~1,000 triage, patch, and copywriting calls | **~$39.00** |
+| **Azure OpenAI Service** | GPT-4o Pay-as-you-go ($5.00/1M input, $15.00/1M output tokens) | ~1,000 hybrid events (patch & PR only) | **~$22.00** |
 | **GitHub Actions / CI/CD** | Team / Enterprise (includes free minutes) | ~50 PR plan & apply builds | **$0.00** (Included) |
-| **Total Recurring Cost** | **Estimated Enterprise Cloud Overhead** | **~1,000 auto-remediations / month** | **~$40.30 / month** |
+| **Total Recurring Cost** | **Estimated Enterprise Cloud Overhead** | **~1,000 auto-remediations / month** | **~$23.30 / month** |
 
 > [!TIP]
 > **Average Cost per Remediation**: ~$0.04 (predominantly OpenAI token fees). 

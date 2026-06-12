@@ -1,0 +1,201 @@
+{
+    "id": "/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourceGroups/Sample-RG/providers/Microsoft.Security/locations/centralus/alerts/13d4eb9a-6f7e-b317-6b31-c3e4d002b5dd",
+    "name": "13d4eb9a-6f7e-b317-6b31-c3e4d002b5dd",
+    "type": "Microsoft.Security/Locations/alerts",
+    "properties": {
+        "status": "Active",
+        "timeGeneratedUtc": "2026-06-08T12:57:03.424Z",
+        "processingEndTimeUtc": "2026-06-08T12:57:03.2875137Z",
+        "version": "2022-01-01.0",
+        "vendorName": "Microsoft",
+        "productName": "Microsoft Defender for Cloud",
+        "productComponentName": "Storage",
+        "alertType": "SIMULATED_Storage.Blob_AM.MalwareFound",
+        "startTimeUtc": "2026-06-08T12:54:21.2853346Z",
+        "endTimeUtc": "2026-06-08T12:54:21.2853346Z",
+        "severity": "High",
+        "isIncident": false,
+        "systemAlertId": "13d4eb9a-6f7e-b317-6b31-c3e4d002b5dd",
+        "intent": "LateralMovement",
+        "resourceIdentifiers": [
+            {
+                "$id": "1",
+                "azureResourceId": "/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourcegroups/Sample-RG/providers/microsoft.storage/storageaccounts/Sample-Storage",
+                "type": "AzureResource",
+                "AzureResourceTenantId": "0c0696f6-cda5-4908-bedf-af3381b78d93"
+            },
+            {
+                "$id": "2",
+                "aadTenantId": "0c0696f6-cda5-4908-bedf-af3381b78d93",
+                "type": "AAD"
+            }
+        ],
+        "compromisedEntity": "Sample-Storage",
+        "alertDisplayName": "[SAMPLE ALERT] Malicious file uploaded to storage account",
+        "description": "THIS IS A SAMPLE ALERT: A malicious file was uploaded to your storage account 'Sample-Storage'.\r\nThe malware detection is based on Microsoft antimalware scanning.\r\nPotential causes may include an intentional upload of malware by a threat actor, or an unintentional upload of a malicious file by a legitimate user.",
+        "remediationSteps": [
+            "Remove the malicious blob from your storage account. You may move it to a designated storage container for quarantine, or delete it.\r\nIt is advisable to enable \\\"soft delete\\\" before deleting malware, to support the ability to undo the deletion. Learn more about enabling soft delete on Azure storage: https://docs.microsoft.com/azure/storage/blobs/soft-delete-blob-overview.\",\"If you have diagnostic logs enabled, query them to see if any other applications or users accessed this file. Trace their actions and contain the blast radius."
+        ],
+        "extendedProperties": {
+            "resourceType": "Storage Account",
+            "Potential Causes": "1. Intentional upload of malware by a malicious actor (true positive)\r\n\r\n2. Unintentional upload of malware by a legitimate user (true positive)\r\n\r\n3. A false positive detection by Microsoft antimalware scanning. You can submit a file for analysis if you suspect it may be a false positive: \r\n(https://docs.microsoft.com/en-us/windows/security/threat-protection/intelligence/submission-guide)",
+            "SHA-256": "a591a6d40bf420404a01g833cfb7b630d62c65bf0bcda32b57b277d9ad9f146e",
+            "Investigation Steps": "• Learn more about the malware type by reading the report on the identified malware in Microsoft Security Intelligence:\r\n(https ://www.microsoft.com/wdsi/threats/threat-search?query=DOS/EICAR_Test_File)\r\n\r\n• If you have diagnostic logs enabled, go to them and query to see if any other applications or users accessed this file. Trace their actions and contain the blast radius.\r\n\r\n• Review the credentials used to perform the upload, to track back and find the user who uploaded the file.\r\n\r\n• If you performed an investigation and suspect the this might be a false positive, you can submit a file for analysis\r\n(https://docs.microsoft.com/windows/security/threat-protection/intelligence/submission-guide).\r\nEnsure you enter the provider name \"Defender for Storage\".\r\n\r\n• Ensure that storage access tokens are stored in a secured location such as Azure Key Vault. Avoid storing or sharing storage access tokens in source code, documentation, and email.",
+            "Malware types detected": "DOS/EICAR_Test_File",
+            "EffectiveAzureResourceId": "/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourcegroups/Sample-RG/providers/microsoft.storage/storageaccounts/Sample-Storage",
+            "CompromisedEntity": "Sample-Storage",
+            "ProductComponentName": "Storage",
+            "EffectiveSubscriptionId": "d78af5f4-5d2d-4141-a725-2088437da0ca"
+        },
+        "entities": [
+            {
+                "$id": "3",
+                "resourceId": "/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourcegroups/Sample-RG/providers/microsoft.storage/storageaccounts/Sample-Storage",
+                "resourceType": "Storage Account",
+                "resourceName": "Sample-Storage",
+                "metadata": {
+                    "IsGraphCenter": true
+                },
+                "entityIds": [
+                    {
+                        "type": "AzureResourceId",
+                        "id": "/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourcegroups/sample-rg/providers/microsoft.storage/storageaccounts/sample-storage"
+                    }
+                ],
+                "asset": true,
+                "rbacScopes": {
+                    "scopesPerType": {
+                        "Workloads": {
+                            "mode": "All",
+                            "scopes": [
+                                "Mdc"
+                            ]
+                        }
+                    }
+                },
+                "type": "azure-resource"
+            },
+            {
+                "$id": "4",
+                "name": "Sample-Name",
+                "storageResource": {
+                    "$ref": "3"
+                },
+                "friendlyName": "Sample-Name",
+                "entityIds": [
+                    {
+                        "type": "CloudResourceNestedObject",
+                        "id": "cloudresource=/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourcegroups/sample-rg/providers/microsoft.storage/storageaccounts/sample-storage;kind=blob container;name=sample-name"
+                    }
+                ],
+                "asset": false,
+                "rbacScopes": {
+                    "scopesPerType": {
+                        "Workloads": {
+                            "mode": "All",
+                            "scopes": [
+                                "Mdc"
+                            ]
+                        }
+                    }
+                },
+                "type": "blob-container"
+            },
+            {
+                "$id": "5",
+                "algorithm": "SHA256",
+                "value": "a591a6d40bf420404a01g833cfb7b630d62c65bf0bcda32b57b277d9ad9f146e",
+                "friendlyName": "SHA256/a591a6d40bf420404a01g833cfb7b630d62c65bf0bcda32b57b277d9ad9f146e",
+                "asset": false,
+                "rbacScopes": {
+                    "scopesPerType": {
+                        "Workloads": {
+                            "mode": "All",
+                            "scopes": [
+                                "Mdc"
+                            ]
+                        }
+                    }
+                },
+                "type": "filehash"
+            },
+            {
+                "$id": "6",
+                "name": "Sample-Name",
+                "blobContainer": {
+                    "$ref": "4"
+                },
+                "url": "https://Sample-Storage.blob.core.windows.net/Sample/Sample.txt",
+                "etag": "Sample-Tag",
+                "friendlyName": "Sample-Name/Sample-Name",
+                "entityIds": [
+                    {
+                        "type": "CloudResourceNestedObject",
+                        "id": "cloudresource=/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourcegroups/sample-rg/providers/microsoft.storage/storageaccounts/sample-storage;kind=blob;name=sample-name/sample-name"
+                    },
+                    {
+                        "type": "URL",
+                        "id": "https://sample-storage.blob.core.windows.net/sample/sample.txt"
+                    }
+                ],
+                "asset": false,
+                "rbacScopes": {
+                    "scopesPerType": {
+                        "Workloads": {
+                            "mode": "All",
+                            "scopes": [
+                                "Mdc"
+                            ]
+                        }
+                    }
+                },
+                "type": "blob"
+            },
+            {
+                "$id": "7",
+                "directory": "https://Sample-Storage.blob.core.windows.net/Sample",
+                "name": "Sample-Name",
+                "fileHashes": [
+                    {
+                        "$ref": "5"
+                    }
+                ],
+                "asset": false,
+                "rbacScopes": {
+                    "scopesPerType": {
+                        "Workloads": {
+                            "mode": "All",
+                            "scopes": [
+                                "Mdc"
+                            ]
+                        }
+                    }
+                },
+                "type": "file"
+            },
+            {
+                "$id": "8",
+                "name": "Sample-Name",
+                "category": "Virus",
+                "files": [
+                    {
+                        "$ref": "7"
+                    }
+                ],
+                "asset": false,
+                "rbacScopes": {
+                    "scopesPerType": {
+                        "Workloads": {
+                            "mode": "All",
+                            "scopes": [
+                                "Mdc"
+                            ]
+                        }
+                    }
+                },
+                "type": "malware"
+            }
+        ],
+        "alertUri": "https://portal.azure.com/#blade/Microsoft_Azure_Security_AzureDefenderForData/AlertBlade/alertId/13d4eb9a-6f7e-b317-6b31-c3e4d002b5dd/subscriptionId/d78af5f4-5d2d-4141-a725-2088437da0ca/resourceGroup/Sample-RG/referencedFrom/alertDeepLink/location/centralus"
+    }
+}
