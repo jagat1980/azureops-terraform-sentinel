@@ -1,0 +1,4 @@
+# CODEOWNERS for AzureOps SecOps Swarm Triage Landing Zone
+# Enforces SRE Human-in-the-Loop review gate for infrastructure modules and core configurations.
+
+* @jagadeeshdharmudu
