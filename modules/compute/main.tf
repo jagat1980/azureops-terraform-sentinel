@@ -40,3 +40,22 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
     ComplianceRisk = "Password-Authentication-Enabled"
   }
 }
+
+resource "azurerm_monitor_metric_alert" "high_cpu_alert" {
+  name                = "INC-Gen2Alert"
+  resource_group_name = "rg-azureops-drift-test"
+  scopes              = [azurerm_linux_virtual_machine.vulnerable_vm.id]
+  description         = "Alert when VM CPU utilization exceeds threshold"
+  severity            = 2
+  enabled             = true
+  frequency           = "PT5M"
+  window_size         = "PT5M"
+
+  criteria {
+    metric_namespace = "Microsoft.Compute/virtualMachines"
+    metric_name      = "Percentage CPU"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 80
+  }
+}
