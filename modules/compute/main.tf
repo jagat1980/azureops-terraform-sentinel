@@ -38,5 +38,55 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
 
   tags = {
     ComplianceRisk = "Password-Authentication-Enabled"
+    HeartbeatMonitoring = "Enabled"
   }
+}
+
+resource "azurerm_log_analytics_workspace" "vm_monitoring" {
+  name                = "law-contoso-vm-monitoring"
+  location            = "centralindia"
+  resource_group_name = "rg-azureops-drift-test"
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+resource "azurerm_virtual_machine_extension" "azure_monitor_agent" {
+  name                       = "AzureMonitorLinuxAgent"
+  virtual_machine_id         = azurerm_linux_virtual_machine.vulnerable_vm.id
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.0"
+  auto_upgrade_minor_version = true
+}
+
+resource "azurerm_monitor_data_collection_rule" "vm_heartbeat_dcr" {
+  name                = "dcr-contoso-vm-heartbeat"
+  location            = "centralindia"
+  resource_group_name = "rg-azureops-drift-test"
+
+  destinations {
+    log_analytics {
+      workspace_resource_id = azurerm_log_analytics_workspace.vm_monitoring.id
+      name                  = "lawDestination"
+    }
+  }
+
+  data_flow {
+    streams      = ["Microsoft-Heartbeat"]
+    destinations = ["lawDestination"]
+  }
+
+  data_sources {
+    extension {
+      name           = "heartbeatExtensionDataSource"
+      streams        = ["Microsoft-Heartbeat"]
+      extension_name = "Heartbeat"
+    }
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "vm_heartbeat_assoc" {
+  name                    = "assoc-contoso-vm-heartbeat"
+  target_resource_id      = azurerm_linux_virtual_machine.vulnerable_vm.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.vm_heartbeat_dcr.id
 }
