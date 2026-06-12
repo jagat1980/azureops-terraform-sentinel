@@ -15,10 +15,12 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
   location                        = "centralindia"
   size                            = "Standard_B1s"
   admin_username                  = "azureadmin"
-  admin_password                  = "P@ssw0rd1234!"
-  
-  # DRIFT PROFILE: Password authentication is enabled instead of SSH keys
-  disable_password_authentication = false
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = "azureadmin"
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7exampleplaceholderkeyforremediation"
+  }
 
   network_interface_ids = [
     "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Network/networkInterfaces/nic-drift-test"
