@@ -22,16 +22,17 @@ with open(_policies_path, "r", encoding="utf-8") as f:
 
 def parse_alert_deterministic(req_body: dict) -> dict:
     """
-    Attempts to extract incident metadata from various Azure alert schemas
+    Attempts to extract alert metadata from various Azure alert schemas
     using pure Python (deterministic parsing). Returns None if the schema
     is completely unrecognized, signaling that LLM cognitive fallback should be used.
     """
     # 1. Common Alert Schema (data.essentials)
     essentials = req_body.get("data", {}).get("essentials")
     if essentials:
-        incident_id = essentials.get("alertId", f"INC-{int(time.time())}")
+        alert_reference_id = essentials.get("alertId", f"ALT-{int(time.time())}")
         target_resource = (essentials.get("configurationItems") or ["UnknownAsset"])[0]
         vulnerability = essentials.get("description", "Security Policy Drift Detected")
+        severity = essentials.get("severity", "Warning")
         
         resource_type = None
         target_ids = essentials.get("alertTargetIDs", [])
@@ -43,16 +44,17 @@ def parse_alert_deterministic(req_body: dict) -> dict:
                     resource_type = f"{provider_segments[0]}.{provider_segments[1]}"
                     
         return {
-            "incident_id": incident_id,
+            "alert_reference_id": alert_reference_id,
             "target_resource": target_resource,
             "vulnerability": vulnerability,
-            "resource_type": resource_type
+            "resource_type": resource_type,
+            "severity": severity
         }
 
     # 2. Legacy / Direct Monitor Alerts (alertContext)
     alert_context = req_body.get("alertContext")
     if alert_context:
-        incident_id = alert_context.get("correlationId") or alert_context.get("operationId") or alert_context.get("eventDataId") or f"INC-{int(time.time())}"
+        alert_reference_id = alert_context.get("correlationId") or alert_context.get("operationId") or alert_context.get("eventDataId") or f"ALT-{int(time.time())}"
         target_resource = "UnknownAsset"
         resource_type = None
         vulnerability = alert_context.get("operationName", "Azure Alert Context Event")
@@ -78,6 +80,9 @@ def parse_alert_deterministic(req_body: dict) -> dict:
         if res_type_prop and "virtual machine" in res_type_prop.lower():
             resource_type = "Microsoft.Compute.virtualMachines"
 
+        # Severity logic
+        severity = properties.get("severity") or alert_context.get("SeverityDescription") or alert_context.get("level") or "Warning"
+
         # Condition-based extraction
         condition = alert_context.get("condition") or {}
         all_of = condition.get("allOf")
@@ -95,18 +100,27 @@ def parse_alert_deterministic(req_body: dict) -> dict:
             vulnerability = f"Metric Threshold Breached: {all_of[0].get('metricName')} {all_of[0].get('operator')} {all_of[0].get('threshold')}"
             
         return {
-            "incident_id": incident_id,
+            "alert_reference_id": alert_reference_id,
             "target_resource": target_resource,
             "vulnerability": vulnerability,
-            "resource_type": resource_type
+            "resource_type": resource_type,
+            "severity": severity
         }
 
     # 3. Defender for Cloud Alerts (root-level properties/vendorName/productName)
     properties = req_body.get("properties")
     if properties and (req_body.get("type") == "Microsoft.Security/Locations/alerts" or "Defender" in properties.get("productName", "")):
-        incident_id = req_body.get("name") or req_body.get("systemAlertId") or f"INC-{int(time.time())}"
-        target_resource = properties.get("compromisedEntity", "UnknownAsset")
+        alert_reference_id = req_body.get("name") or req_body.get("systemAlertId") or f"ALT-{int(time.time())}"
+        target_resource = "UnknownAsset"
+        for entity in properties.get("entities", []):
+            if entity.get("type") == "azure-resource" and entity.get("resourceName"):
+                target_resource = entity["resourceName"]
+                break
+        if target_resource == "UnknownAsset":
+            target_resource = properties.get("compromisedEntity", "UnknownAsset")
+            
         vulnerability = properties.get("alertDisplayName") or properties.get("description", "Defender Security Alert")
+        severity = properties.get("severity", "High")
         
         resource_type = None
         resource_identifiers = properties.get("resourceIdentifiers", [])
@@ -120,10 +134,11 @@ def parse_alert_deterministic(req_body: dict) -> dict:
                         resource_type = f"{provider_segments[0].title()}.{provider_segments[1].title()}"
 
         return {
-            "incident_id": incident_id,
+            "alert_reference_id": alert_reference_id,
             "target_resource": target_resource,
             "vulnerability": vulnerability,
-            "resource_type": resource_type
+            "resource_type": resource_type,
+            "severity": severity
         }
 
     return None
@@ -241,10 +256,11 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
         parsed = parse_alert_deterministic(req_body)
         
         if parsed and parsed["resource_type"]:
-            incident_id = parsed["incident_id"]
+            alert_reference_id = parsed["alert_reference_id"]
             target_asset = parsed["target_resource"]
             vulnerability = parsed["vulnerability"]
             resource_type = parsed["resource_type"]
+            severity = parsed["severity"]
             target_file_path = resolve_target_file(resource_type, tf_files)
 
             if target_file_path:
@@ -288,13 +304,14 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
             {json.dumps(tf_files)}
             
             Tasks:
-            1. Locate any unique correlation identifiers (like alertId, id, trackingId, name). Map to 'incident_id'. If missing, synthesize a unique tracking code.
+            1. Locate any unique correlation identifiers (like alertId, id, trackingId, name). Map to 'alert_reference_id'. If missing, synthesize a unique tracking code.
             2. Locate the compromised or target asset name. Map to 'target_resource'.
             3. Identify the explicit security vulnerability or policy drift. Map to 'vulnerability'.
-            4. Select the target file path from the available files list that most likely defines or configures the target resource.
+            4. Identify the severity of the alert (e.g. High, Medium, Low, Sev0, Sev1, Informational). Map to 'severity'.
+            5. Select the target file path from the available files list that most likely defines or configures the target resource.
             
             CRITICAL GUARDRAIL: The 'target_file_path' value MUST be chosen strictly from the 'Available Terraform Files' array provided above. Do not invent or hallucinate file paths.
-            Output ONLY a strict, flat JSON dictionary with keys: 'incident_id', 'target_resource', 'vulnerability', 'target_file_path'.
+            Output ONLY a strict, flat JSON dictionary with keys: 'alert_reference_id', 'target_resource', 'vulnerability', 'severity', 'target_file_path'.
             
             Alert Payload:
             {json.dumps(req_body)}
@@ -305,9 +322,10 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
                 response_format={"type": "json_object"}
             )
             normalized = json.loads(triage_response.choices[0].message.content)
-            incident_id = normalized.get("incident_id", f"INC-{int(time.time())}")
+            alert_reference_id = normalized.get("alert_reference_id", f"ALT-{int(time.time())}")
             target_asset = normalized.get("target_resource", "UnknownAsset")
             vulnerability = normalized.get("vulnerability", "Security Policy Drift Detected")
+            severity = normalized.get("severity", "Warning")
             
             # Anti-Hallucination: Python-side enforcement of the Enum
             extracted_path = normalized.get("target_file_path")
@@ -319,7 +337,7 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
             
             resource_type = "Unknown"
         
-        logging.info(f"🧠 Triage Complete [{triage_mode}] -> ID: {incident_id} | Asset: {target_asset} | File: {target_file_path}")
+        logging.info(f"🧠 Triage Complete [{triage_mode}] -> ID: {alert_reference_id} | Asset: {target_asset} | File: {target_file_path}")
     except Exception as e:
         logging.error(f"❌ Phase 2 (Triage & Targeting) Failed: {str(e)}")
         return func.HttpResponse(f"Triage processing failure: {str(e)}", status_code=500)
@@ -421,7 +439,7 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
     # -----------------------------------------------------------------
     try:
         timestamp = int(time.time())
-        new_branch = f"secops-swarm-fix-{incident_id.lower().replace(' ', '-')}-{timestamp}"
+        new_branch = f"secops-swarm-fix-{alert_reference_id.lower().replace(' ', '-')}-{timestamp}"
         # Sanitize branch name: only allow alphanumeric, hyphens, and forward slashes
         new_branch = re.sub(r'[^a-z0-9\-/]', '-', new_branch)
         main_branch = repo.get_git_ref("heads/main")
@@ -432,7 +450,7 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
         # 2. Write and commit the updated HCL block onto the tracking branch
         repo.update_file(
             path=target_file_path,
-            message=f"secops(swarm): automatic remediation compliance patch for incident {incident_id}",
+            message=f"secops(swarm): automatic remediation compliance patch for alert {alert_reference_id}",
             content=corrected_tf_code,
             sha=file_content.sha,
             branch=new_branch
@@ -440,10 +458,11 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
 
         # 3. Generate structured Markdown description via OpenAI for the Pull Request body
         pr_doc_prompt = f"""
-        Write a professional enterprise GitOps Markdown description for a Pull Request resolving the following incident.
+        Write a professional enterprise GitOps Markdown description for a Pull Request resolving the following alert.
         Vulnerability: {vulnerability}
         Target Asset: {target_asset}
-        Incident ID Reference: {incident_id}
+        Alert Reference ID: {alert_reference_id}
+        Severity: {severity}
         Target File: {target_file_path}
         Triage Mode: {triage_mode}
         
@@ -463,8 +482,18 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
         pr_markdown_body = pr_doc_response.choices[0].message.content
 
         # 4. Programmatically Open the Pull Request human gate
+        # Extract a clean, concise alert description (truncate if too long)
+        clean_vuln = vulnerability.replace("[SAMPLE ALERT] ", "").strip()
+        # Clean up any potential markdown ticks or double quotes
+        clean_vuln = clean_vuln.replace("`", "").replace('"', "")
+        if len(clean_vuln) > 60:
+            clean_vuln = clean_vuln[:57] + "..."
+            
+        # Shorten GUID for human readability in PR title (similar to a Git commit hash)
+        short_id = alert_reference_id.split("/")[-1].split("-")[0].upper() if "-" in alert_reference_id else alert_reference_id.upper()
+
         pr = repo.create_pull(
-            title=f"🚨 SecOps Auto-Fix [{incident_id.upper()}]: Remediate Drift on {target_asset}",
+            title=f"🚨 SecOps Auto-Fix [{severity.upper()}][{short_id}]: {clean_vuln} on {target_asset}",
             body=pr_markdown_body,
             head=new_branch,
             base="main"
@@ -475,7 +504,8 @@ def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
             body=json.dumps({
                 "status": "PR_CREATED",
                 "url": pr.html_url,
-                "incident_id": incident_id,
+                "alert_reference_id": alert_reference_id,
+                "severity": severity,
                 "file_patched": target_file_path,
                 "triage_mode": triage_mode
             }),

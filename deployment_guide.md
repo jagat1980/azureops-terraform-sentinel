@@ -26,8 +26,8 @@ graph TD
         GH_API --> |FileList| FN
         FN --> |Tier 1: Deterministic Parsing| DET[Pure Python Parser]
         DET -.-> |Fallback| OpenAI1[Azure OpenAI Cognitive Triage]
-        DET --> |incident_id, target_file_path| FN
-        OpenAI1 --> |incident_id, target_file_path| FN
+        DET --> |alert_reference_id, severity, target_file_path| FN
+        OpenAI1 --> |alert_reference_id, severity, target_file_path| FN
         FN --> |Fetch File Content| GH_Content[GitHub File Retrieval]
         GH_Content --> |Raw HCL Code| FN
         FN --> |Load Remediation Policy| POL[remediation_policies.json]
