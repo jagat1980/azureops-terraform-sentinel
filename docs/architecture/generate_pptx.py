@@ -41,7 +41,7 @@ def create_presentation():
     tf.word_wrap = True
 
     p = tf.paragraphs[0]
-    p.text = "AZUREOPS SENTINEL"
+    p.text = "CLOUDSECAIOPS"
     p.font.size = Pt(20)
     p.font.bold = True
     p.font.color.rgb = TEAL_COLOR
@@ -435,8 +435,8 @@ def create_presentation():
     cp.alignment = PP_ALIGN.CENTER
 
     # Save Presentation
-    prs.save("references/azureops_gitops_architecture.pptx")
-    print("[*] Presentation generated successfully: references/azureops_gitops_architecture.pptx")
+    prs.save("docs/architecture/azureops_gitops_architecture.pptx")
+    print("[*] Presentation generated successfully: docs/architecture/azureops_gitops_architecture.pptx")
 
 if __name__ == "__main__":
     create_presentation()
