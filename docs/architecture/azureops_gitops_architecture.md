@@ -1,7 +1,7 @@
-# AzureOps Sentinel: Enterprise GitOps Blueprint
+# CloudSecAIOps: Enterprise GitOps Blueprint
 ### A Multi-Source Event-Driven Declarative Remediation Architecture for Terraform-Managed Public Cloud Infrastructures
 
-This document provides an editable representation of the architectural blueprint and lifecycle specification for the **AzureOps Sentinel** auto-remediation engine.
+This document provides an editable representation of the architectural blueprint and lifecycle specification for the **CloudSecAIOps** auto-remediation engine.
 
 ---
 
