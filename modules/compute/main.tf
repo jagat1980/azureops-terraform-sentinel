@@ -22,16 +22,16 @@ variable "network_interface_id" {
 
 # 1. Linux Virtual Machine with Insecure Password Authentication (Drift Profile)
 resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
-  name                            = "vm-drift-test"
-  resource_group_name             = var.resource_group_name
-  location                        = var.location
-  size                            = "Standard_B1s"
-  admin_username                  = "azureadmin"
-  admin_password                  = "P@ssw0rd1234!"
-  
+  name                = "vm-drift-test"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  size                = "Standard_B1s"
+  admin_username      = "azureadmin"
+  # admin_password removed: use SSH key-based authentication
+
   # DRIFT PROFILE: Password authentication is enabled instead of SSH keys
-  disable_password_authentication = false
- 
+  disable_password_authentication = true
+
   network_interface_ids = [
     var.network_interface_id
   ]
