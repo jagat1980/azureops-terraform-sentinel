@@ -15,3 +15,5 @@ terraform {
 provider "azurerm" {
   features {}
 }
+
+# CI trigger after configuring secrets
