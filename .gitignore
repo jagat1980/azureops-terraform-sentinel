@@ -48,3 +48,4 @@ azureops-brain/.python_packages/
 # Azure Functions artifacts
 bin/
 obj/
+.env

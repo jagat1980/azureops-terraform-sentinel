@@ -8,20 +8,32 @@ terraform {
   }
 }
 
+variable "resource_group_name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
+variable "network_interface_id" {
+  type = string
+}
+
 # 1. Linux Virtual Machine with Insecure Password Authentication (Drift Profile)
 resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
   name                            = "vm-drift-test"
-  resource_group_name             = "rg-azureops-drift-test"
-  location                        = "centralindia"
+  resource_group_name             = var.resource_group_name
+  location                        = var.location
   size                            = "Standard_B1s"
   admin_username                  = "azureadmin"
   admin_password                  = "P@ssw0rd1234!"
   
   # DRIFT PROFILE: Password authentication is enabled instead of SSH keys
   disable_password_authentication = false
-
+ 
   network_interface_ids = [
-    "/subscriptions/test-sub/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Network/networkInterfaces/nic-drift-test"
+    var.network_interface_id
   ]
 
   os_disk {

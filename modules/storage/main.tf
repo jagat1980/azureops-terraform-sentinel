@@ -9,29 +9,23 @@ terraform {
 }
 
 
-# 1. Random ID Generation
-resource "random_string" "unique_id" {
-  length  = 6
-  special = false
-  upper   = false
+variable "resource_group_name" {
+  type = string
 }
 
-# 2. Resource Group Creation (Central India)
-resource "azurerm_resource_group" "drift_test" {
-  name     = "rg-azureops-drift-test"
-  location = "centralindia"
-  tags = {
-    Environment = "Harness-Testing"
-    ManagedBy   = "Terraform"
-    SecurityLog = "Drift-Simulation"
-  }
+variable "location" {
+  type = string
 }
 
-# 3. Storage Account with Explicit Public Opt-In Enabled
+variable "unique_suffix" {
+  type = string
+}
+
+# 1. Storage Account with Explicit Public Opt-In Enabled
 resource "azurerm_storage_account" "vulnerable_storage" {
-  name                     = "stdrift${random_string.unique_id.result}"
-  resource_group_name      = azurerm_resource_group.drift_test.name
-  location                 = azurerm_resource_group.drift_test.location
+  name                     = "stdrift${var.unique_suffix}"
+  resource_group_name      = var.resource_group_name
+  location                 = var.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
   account_kind             = "StorageV2"

@@ -8,11 +8,19 @@ terraform {
   }
 }
 
+variable "resource_group_name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
 # 1. SQL Server Configuration
 resource "azurerm_mssql_server" "sql_server" {
   name                         = "sqlserver-drift-test"
-  resource_group_name          = "rg-azureops-drift-test"
-  location                     = "centralindia"
+  resource_group_name          = var.resource_group_name
+  location                     = var.location
   version                      = "12.0"
   administrator_login          = "sqladmin"
   administrator_login_password = "P@ssw0rd1234!"

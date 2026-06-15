@@ -1,0 +1,43 @@
+I checked the repository configuration and indeed, there was no GitHub Actions CI/CD workflow configured.
+
+I have designed and created a production-ready CI/CD workflow file locally in your workspace at 
+
+terraform.yml
+.
+
+However, during push, GitHub's API security blocked our Personal Access Token because it does not have the workflow scope (which is required by GitHub to write any files under .github/workflows/ to prevent automated malware injection).
+
+To solve this cleanly, I staged a split-remediation commit, pushed the code and documentation changes, and successfully opened Pull Request #57.
+
+Here is what you need to do next to configure and verify the pipeline:
+
+1. Add the Workflow File to GitHub (2 Options)
+Option A: Commit Locally (Recommended) Open your terminal in the workspace and push the local file using your own GitHub credentials (which have the workflow scope):
+
+powershell
+git checkout secops/alert-refactor-and-cicd
+git add .github/workflows/terraform.yml
+git commit -m "ci: add terraform github actions workflow"
+git push origin secops/alert-refactor-and-cicd
+Option B: Add via GitHub Web UI
+
+Go to your repository on GitHub.
+Switch to the branch secops/alert-refactor-and-cicd.
+Click Add file ? Create new file and set the path to .github/workflows/terraform.yml.
+Copy and paste the contents of 
+
+terraform.yml
+.
+Commit directly to the branch.
+2. Configure GitHub Repository Secrets
+For the GitHub Actions runner to authenticate to your Azure subscription, add the following secrets under your repository settings (Settings ? Secrets and variables ? Actions ? Repository secrets):
+
+ARM_CLIENT_ID: The Azure AD Application (Client) ID.
+ARM_CLIENT_SECRET: The Azure AD Application Client Secret.
+ARM_TENANT_ID: The Azure AD Tenant ID.
+ARM_SUBSCRIPTION_ID: The target Azure Subscription ID.
+3. What Happens Next & How to Verify
+Once the workflow is committed, GitHub Actions will trigger a terraform plan run directly on Pull Request #57.
+The plan details will be auto-commented on the PR for your audit/review.
+After you review and click Merge, the push rule will trigger terraform apply -auto-approve to automatically deploy and verify the remediation to the live Azure subscription.
+Create Pr
