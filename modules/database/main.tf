@@ -31,7 +31,7 @@ resource "azurerm_mssql_firewall_rule" "vulnerable_fw" {
   name             = "AllowAllInternet"
   server_id        = azurerm_mssql_server.sql_server.id
   
-  # DRIFT PROFILE: Exposes database to the entire public internet
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "255.255.255.255"
+  # DRIFT PROFILE: Restricts database access to the 10.0.0.0/8 private range
+  start_ip_address = "10.0.0.0"
+  end_ip_address   = "10.255.255.255"
 }
