@@ -1,4 +1,3 @@
-
 # 1. Random ID Generation (Root Level)
 resource "random_string" "unique_id" {
   length  = 6
@@ -15,6 +14,11 @@ resource "azurerm_resource_group" "drift_test" {
     ManagedBy   = "Terraform"
     SecurityLog = "Drift-Simulation"
   }
+}
+
+resource "azurerm_container_registry" "acrdrift" {
+  name                          = "acrdrift"
+  public_network_access_enabled = false
 }
 
 # 3. Module Orchestration
