@@ -35,3 +35,5 @@ resource "azurerm_mssql_firewall_rule" "vulnerable_fw" {
   start_ip_address = "0.0.0.0"
   end_ip_address   = "255.255.255.255"
 }
+
+

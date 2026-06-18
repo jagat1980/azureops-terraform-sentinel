@@ -1,0 +1,14 @@
+{
+  "name": "Security Remediation Webhook",
+  "description": "Listens for incoming security alerts and triggers the DevSecOps agent in a fresh Git worktree.",
+  "trigger": {
+    "type": "webhook",
+    "path": "/api/security/alert"
+  },
+  "action": {
+    "type": "invoke_agent",
+    "skill": "security_remediator",
+    "workspace": "branch",
+    "pass_payload": true
+  }
+}

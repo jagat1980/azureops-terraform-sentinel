@@ -45,8 +45,9 @@ resource "azurerm_container_group" "vulnerable_aci" {
   os_type             = "Linux"
 
   container {
-    name   = "webserver"
-    image  = "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
+    name   = "vulnerable-app"
+    # DRIFT PROFILE: Vulnerable application base image with unpatched CVEs
+    image  = "node:10-alpine"
     cpu    = "0.5"
     memory = "1.5"
 
@@ -55,9 +56,9 @@ resource "azurerm_container_group" "vulnerable_aci" {
       protocol = "TCP"
     }
 
-    # DRIFT PROFILE: Container runs with privileged root-like access (violates least privilege)
-    security_profile {
-      privileged = true
+    # Auto-Remediated: Disabled privileged access based on Azure Defender alert (ALT-1234567890)
+    security {
+      privilege_enabled = false
     }
   }
 

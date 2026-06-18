@@ -1,0 +1,14 @@
+{
+  "name": "Swarm Remediation Webhook",
+  "description": "Listens for incoming security alerts and triggers the Supervisor Agent.",
+  "trigger": {
+    "type": "webhook",
+    "path": "/api/security/alert"
+  },
+  "action": {
+    "type": "invoke_agent",
+    "skill": "orchestrator_supervisor",
+    "workspace": "branch",
+    "pass_payload": true
+  }
+}
