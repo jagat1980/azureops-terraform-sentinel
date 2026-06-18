@@ -1,4 +1,3 @@
-
 # 1. Random ID Generation (Root Level)
 resource "random_string" "unique_id" {
   length  = 6
@@ -42,6 +41,29 @@ module "database" {
   source              = "./modules/database"
   resource_group_name = azurerm_resource_group.drift_test.name
   location            = azurerm_resource_group.drift_test.location
+}
+
+resource "azurerm_container_group" "aci_drift" {
+  name                = "aci-drift"
+  location            = azurerm_resource_group.drift_test.location
+  resource_group_name = azurerm_resource_group.drift_test.name
+  os_type             = "Linux"
+
+  container {
+    name   = "aci-drift"
+    image  = "nginx:latest"
+    cpu    = "1"
+    memory = "1.5"
+
+    ports {
+      port     = 80
+      protocol = "TCP"
+    }
+  }
+
+  security_profile {
+    privileged = false
+  }
 }
 
 # 4. State Migration Blocks
