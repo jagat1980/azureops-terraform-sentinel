@@ -44,6 +44,13 @@ module "database" {
   location            = azurerm_resource_group.drift_test.location
 }
 
+module "container" {
+  source              = "./modules/container"
+  resource_group_name = azurerm_resource_group.drift_test.name
+  location            = azurerm_resource_group.drift_test.location
+  unique_suffix       = random_string.unique_id.result
+}
+
 # 4. State Migration Blocks
 moved {
   from = azurerm_storage_account.vulnerable_storage

@@ -16,5 +16,13 @@
     "Microsoft.Sql": {
         "module_path": "modules/database/",
         "remediation_rules": "Narrow open firewall rules: change start_ip_address to '10.0.0.0' and end_ip_address to '10.255.255.255'. Do NOT alter server authentication settings, version, or administrator credentials."
+    },
+    "Microsoft.ContainerRegistry": {
+        "module_path": "modules/container/",
+        "remediation_rules": "Set public_network_access_enabled to false. Do NOT alter admin_enabled, sku, tags, or resource group scopes."
+    },
+    "Microsoft.ContainerInstance": {
+        "module_path": "modules/container/",
+        "remediation_rules": "Set privileged = false in the security_profile block of the container. Do NOT alter ports, cpu, memory, image, or resource group scopes."
     }
 }
