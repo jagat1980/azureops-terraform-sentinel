@@ -7,7 +7,7 @@
     },
     "Microsoft.Compute": {
         "module_path": "modules/compute/",
-        "remediation_rules": "Set disable_password_authentication = true. Remove or redact any hardcoded admin_password values by replacing with a placeholder comment. Do NOT alter os_disk, source_image_reference, network_interface_ids, or resource group scopes."
+        "remediation_rules": "Set disable_password_authentication = true. Remove or redact any hardcoded admin_password values. To satisfy the required SSH public key without introducing new variables that break parent caller modules, dynamically generate a tls_private_key resource (using RSA 4096) inside this file and reference it in the admin_ssh_key block. Do NOT alter os_disk, source_image_reference, network_interface_ids, or resource group scopes."
     },
     "Microsoft.Network": {
         "module_path": "modules/network/",
