@@ -172,7 +172,7 @@ class ContainerImageScanPipeline:
                         "Class": "os-pkgs",
                         "Vulnerabilities": [
                             {
-                                "VulnerabilityID": "CVE-2023-56789",
+                                "VulnerabilityID": "CVE-2023-75689",
                                 "PkgName": "openssl",
                                 "InstalledVersion": "3.0.7-r0",
                                 "FixedVersion": "3.0.8-r0",
@@ -300,7 +300,7 @@ class ContainerImageScanPipeline:
 
         # Simulated Threat Feed database lookup
         threat_db = {
-            "CVE-2023-56789": {"epss": 0.942, "kev": True},  # High exploit likelihood + active exploitation
+            "CVE-2023-75689": {"epss": 0.942, "kev": True},  # High exploit likelihood + active exploitation
             "CVE-2023-38545": {"epss": 0.812, "kev": True},
             "CVE-2022-4450": {"epss": 0.054, "kev": False}
         }
@@ -450,7 +450,7 @@ Format your response as a JSON object matching this schema:
             logging.info("🔌 Utilizing offline deterministic fallback for LLM Judge")
             for cve in ambiguous_cves:
                 # Mock logic
-                if cve["id"] == "CVE-2023-56789":
+                if cve["id"] == "CVE-2023-75689":
                     judgments_map[cve["id"]] = {
                         "id": cve["id"],
                         "reachable": True,

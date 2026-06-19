@@ -1,16 +1,16 @@
 {
   "image_uri": "azureops-app:latest",
-  "timestamp": "2026-06-19T15:55:24Z",
+  "timestamp": "2026-06-19T17:18:56Z",
   "steps": [
     {
       "name": "SCAN",
       "description": "trivy.scan_image (MCP) -> raw CVEs + SBOM",
       "status": "COMPLETED",
-      "duration_seconds": 0.021,
+      "duration_seconds": 0.001,
       "error_message": null,
       "input_metadata": {
         "image_uri": "azureops-app:latest",
-        "payload_path": "payloads/trivy_container_openssl_cve.json"
+        "payload_path": "payloads\\trivy_container_openssl_cve.json"
       },
       "output_metadata": {
         "vulnerability_count": 1,
@@ -44,7 +44,7 @@
       "name": "ENRICH",
       "description": "EPSS score + KEV flag (MCP feeds, parallel)",
       "status": "COMPLETED",
-      "duration_seconds": 0.002,
+      "duration_seconds": 0.001,
       "error_message": null,
       "input_metadata": {},
       "output_metadata": {
@@ -97,7 +97,7 @@
       "name": "DRAFT PR",
       "description": "github.create_pull_request with human review gate",
       "status": "COMPLETED",
-      "duration_seconds": 0.002,
+      "duration_seconds": 0.003,
       "error_message": null,
       "input_metadata": {
         "requires_human_approval": true,

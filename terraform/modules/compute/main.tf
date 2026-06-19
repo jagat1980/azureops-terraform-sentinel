@@ -28,6 +28,7 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
   size                            = "Standard_B1s"
   admin_username                  = "azureadmin"
   disable_password_authentication = true
+  allow_extension_operations      = false
 
   network_interface_ids = [
     var.network_interface_id

@@ -15,14 +15,14 @@
       "Type": "alpine",
       "Vulnerabilities": [
         {
-          "VulnerabilityID": "CVE-2023-75689",
+          "VulnerabilityID": "CVE-2023-75689", 
           "PkgName": "openssl",
           "InstalledVersion": "3.0.7-r0",
           "FixedVersion": "3.0.8-r0",
           "Layer": {
             "DiffID": "sha256:abcd1234efgh5678"
           },
-          "Severity": "CRITICAL",
+          "Severity": "Critical", 
           "Title": "openssl: RCE via malformed certificate",
           "Description": "A critical vulnerability exists in OpenSSL < 3.0.8 which could allow remote code execution.",
           "TargetFile": "Dockerfile"

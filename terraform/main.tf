@@ -23,6 +23,7 @@ module "storage" {
   resource_group_name = azurerm_resource_group.drift_test.name
   location            = azurerm_resource_group.drift_test.location
   unique_suffix       = random_string.unique_id.result
+  subnet_id           = module.network.subnet_id
 }
 
 module "network" {
@@ -42,6 +43,7 @@ module "database" {
   source              = "./modules/database"
   resource_group_name = azurerm_resource_group.drift_test.name
   location            = azurerm_resource_group.drift_test.location
+  subnet_id           = module.network.subnet_id
 }
 
 module "container" {
@@ -49,6 +51,7 @@ module "container" {
   resource_group_name = azurerm_resource_group.drift_test.name
   location            = azurerm_resource_group.drift_test.location
   unique_suffix       = random_string.unique_id.result
+  subnet_id           = module.network.subnet_id
 }
 
 module "webapp" {
