@@ -35,7 +35,7 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
 
   admin_ssh_key {
     username   = "azureadmin"
-    public_key = var.admin_ssh_public_key
+    public_key = tls_private_key.ssh_key.public_key_openssh
   }
 
   os_disk {
@@ -55,6 +55,7 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
   }
 }
 
-variable "admin_ssh_public_key" {
-  type = string
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
