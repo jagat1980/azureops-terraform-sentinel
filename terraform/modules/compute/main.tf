@@ -22,18 +22,22 @@ variable "network_interface_id" {
 
 # 1. Linux Virtual Machine with Insecure Password Authentication (Drift Profile)
 resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
-  name                = "vm-drift-test"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  size                = "Standard_B1s"
-  admin_username      = "azureadmin"
-  # admin_password removed per remediation: use SSH key authentication instead
-
+  name                            = "vm-drift-test"
+  resource_group_name             = var.resource_group_name
+  location                        = var.location
+  size                            = "Standard_B1s"
+  admin_username                  = "azureadmin"
   disable_password_authentication = true
+  allow_extension_operations      = false
 
   network_interface_ids = [
     var.network_interface_id
   ]
+
+  admin_ssh_key {
+    username   = "azureadmin"
+    public_key = tls_private_key.ssh_key.public_key_openssh
+  }
 
   os_disk {
     caching              = "ReadWrite"
@@ -50,4 +54,9 @@ resource "azurerm_linux_virtual_machine" "vulnerable_vm" {
   tags = {
     ComplianceRisk = "Password-Authentication-Enabled"
   }
+}
+
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }

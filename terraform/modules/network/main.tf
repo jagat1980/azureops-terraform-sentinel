@@ -47,6 +47,11 @@ resource "azurerm_network_interface_security_group_association" "nic_nsg_assoc" 
   network_security_group_id = azurerm_network_security_group.vulnerable_nsg.id
 }
 
+resource "azurerm_subnet_network_security_group_association" "subnet_nsg_assoc" {
+  subnet_id                 = azurerm_subnet.drift_subnet.id
+  network_security_group_id = azurerm_network_security_group.vulnerable_nsg.id
+}
+
 # 1. Network Security Group with Open Management Ports (Drift Profile)
 resource "azurerm_network_security_group" "vulnerable_nsg" {
   name                = "nsg-landingzone-drift"

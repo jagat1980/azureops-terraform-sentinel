@@ -10,7 +10,8 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write # Required to post plan output comments on Pull Requests
+  issues: write # Required to post plan output comments on Pull Requests
+  pull-requests: write
 
 jobs:
   terraform:
@@ -58,30 +59,37 @@ jobs:
       # 7. Post Plan details directly to the Pull Request for SRE audit trail
       - name: Post Plan to Pull Request
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
+        env:
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          ACTION_EVENT: ${{ github.event_name }}
+          PUSHED_BY: ${{ github.actor }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### 🔍 Terraform Plan Dry-Run Result
-            * **Status**: \`${{ steps.plan.outcome }}\`
-            * **Action Event**: \`${{ github.event_name }}\`
-            
-            <details><summary>Show Full Execution Plan</summary>
-            
-            \`\`\`hcl
-            ${{ steps.plan.outputs.stdout }}
-            \`\`\`
-            
-            </details>
-            
-            *Pushed by: @${{ github.actor }}*`;
-            
-            github.rest.issues.createComment({
+            const output = [
+              '#### Terraform Plan Dry-Run Result',
+              `* **Status**: \`${process.env.PLAN_OUTCOME}\``,
+              `* **Action Event**: \`${process.env.ACTION_EVENT}\``,
+              '',
+              '<details><summary>Show Full Execution Plan</summary>',
+              '',
+              '```hcl',
+              process.env.PLAN_STDOUT || 'No Terraform plan output was captured.',
+              '```',
+              '',
+              '</details>',
+              '',
+              `*Pushed by: @${process.env.PUSHED_BY}*`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: output
-            })
+            });
 
       # 8. Hard fail the pipeline if the plan execution failed
       - name: Verify Plan Outcome

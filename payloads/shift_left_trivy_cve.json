@@ -1,0 +1,33 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "azureops-app:latest",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.17.0"
+    }
+  },
+  "Results": [
+    {
+      "Target": "azureops-app:latest (alpine 3.17.0)",
+      "Class": "os-pkgs",
+      "Type": "alpine",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-75689",
+          "PkgName": "openssl",
+          "InstalledVersion": "3.0.7-r0",
+          "FixedVersion": "3.0.8-r0",
+          "Layer": {
+            "DiffID": "sha256:abcd1234efgh5678"
+          },
+          "Severity": "CRITICAL",
+          "Title": "openssl: RCE via malformed certificate",
+          "Description": "A critical vulnerability exists in OpenSSL < 3.0.8 which could allow remote code execution.",
+          "TargetFile": "Dockerfile"
+        }
+      ]
+    }
+  ]
+}

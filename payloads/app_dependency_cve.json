@@ -1,0 +1,35 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "vulnerable-app",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.11.6"
+    },
+    "ImageID": "sha256:abcd1234efgh5678",
+    "RepoTags": [
+      "node:10-alpine"
+    ]
+  },
+  "Results": [
+    {
+      "Target": "node:10-alpine (alpine 3.11.6)",
+      "Class": "os-pkgs",
+      "Type": "alpine",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-38545",
+          "PkgName": "curl",
+          "InstalledVersion": "7.67.0-r0",
+          "FixedVersion": "8.4.0-r0",
+          "Severity": "CRITICAL",
+          "Title": "SOCKS5 heap buffer overflow",
+          "Description": "A heap-based buffer overflow flaw was found in the curl package. This issue occurs when curl is told to use a SOCKS5 proxy, allowing a malicious server to cause a denial of service or potentially execute arbitrary code.",
+          "TargetFile": "terraform/modules/container/main.tf",
+          "Remediation": "Upgrade base image to node:20-alpine or later"
+        }
+      ]
+    }
+  ]
+}

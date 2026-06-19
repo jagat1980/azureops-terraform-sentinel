@@ -1,0 +1,27 @@
+{
+  "schemaId": "azureMonitorCommonAlertSchema",
+  "data": {
+    "essentials": {
+      "alertId": "/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/providers/Microsoft.AlertsManagement/alerts/db-audit-456",
+      "alertRule": "SQL Server Vulnerability Assessment - Auditing Disabled",
+      "severity": "Sev1",
+      "signalType": "Metric",
+      "monitorCondition": "Fired",
+      "monitoringService": "Microsoft Defender for SQL",
+      "alertTargetIDs": [
+        "/subscriptions/d78af5f4-5d2d-4141-a725-2088437da0ca/resourceGroups/rg-azureops-drift-test/providers/Microsoft.Sql/servers/sqlserver-drift-test"
+      ],
+      "originAlertId": "DB_AUDIT_DISABLED_ALERT"
+    },
+    "alertContext": {
+      "properties": {
+        "title": "SQL Server Auditing is not enabled",
+        "description": "The SQL Server sqlserver-drift-test does not have auditing enabled. Server audit logs are critical for detecting anomalous activity, investigating breaches, and meeting compliance requirements (SOC2, PCI-DSS, HIPAA). Audit retention must be set to a minimum of 90 days per CIS Azure Benchmark 4.1.1.",
+        "remediation": "Add an azurerm_mssql_server_extended_auditing_policy resource with retention_in_days >= 90 and log_monitoring_enabled = true, targeting the existing storage account.",
+        "complianceFramework": "CIS Microsoft Azure Foundations Benchmark v1.3.0, NIST 800-53 AU-3, PCI-DSS Req 10.7",
+        "checkovRules": "CKV_AZURE_23, CKV_AZURE_24",
+        "targetFile": "terraform/modules/database/main.tf"
+      }
+    }
+  }
+}

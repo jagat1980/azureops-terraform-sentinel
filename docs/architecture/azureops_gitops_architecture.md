@@ -1,116 +1,197 @@
 # CloudSecAIOps: Enterprise GitOps Blueprint
-### A Multi-Source Event-Driven Declarative Remediation Architecture for Terraform-Managed Public Cloud Infrastructures
+### Dual-Architecture Reference Specification: Codex Native Swarm & Azure Function Webhook
 
-This document provides an editable representation of the architectural blueprint and lifecycle specification for the **CloudSecAIOps** auto-remediation engine.
+This document provides the architectural specification for the two distinct remediation solutions available in the **CloudSecAIOps** repository:
+1. **Solution 1: Codex App Native Multi-Agent Swarm (IDE-Driven)**
+2. **Solution 2: Azure Function Webhook Remediation Engine (API-Driven)**
 
 ---
 
-## 1. End-to-End Event-Driven Functional Architecture Diagram
+## SOLUTION 1: Codex App Native Multi-Agent Swarm
 
-The diagram below represents the functional telemetry and remediation pipeline. It is written in **Mermaid** format, which can be natively edited or rendered in markdown previewers, Azure DevOps, and GitHub:
+This solution runs natively inside the Codex App environment, utilizing prompt-based agent cooperation (skills) and Model Context Protocol (MCP) servers for cloud and Git integration.
+
+### 1. Functional Architecture Diagram
 
 ```mermaid
 graph TD
-    %% Detection & Ingest Phase
-    subgraph Detection [1. DETECTION & INGEST]
-        MD[Microsoft Defender<br/>Cloud security posture drift]
-        LA[Azure Log Analytics<br/>Anomalous KQL alert signals]
-        AM[Azure Monitor<br/>Metric threshold state alerts]
-        EG[Azure Event Grid<br/>Universal CloudEvents Router]
+    %% Telemetry & Ingest
+    subgraph Ingest [1. telemetry ingestion]
+        Trivy[Trivy Scanner / Defender CLI]
+        MCP_Trivy[Trivy MCP Server]
+        Alert[Webhook Event / Direct Chat Prompt]
+        
+        Trivy --> |Scan Payload| MCP_Trivy
+        MCP_Trivy --> |Ingest Alert| Alert
+    end
+
+    %% Codex Swarm
+    subgraph Swarm [2. codex native swarm]
+        GR{NeMo Guardrails<br/>Input/Output Filter}
+        Rules[AGENTS.md Workspace Rules]
+        Supervisor[orchestrator_supervisor skill]
+        Triage[security_triage_analyst skill]
+        Remediator[iac_remediator / app_remediator / db_remediator]
+        Auditor[compliance_auditor skill]
+
+        Alert --> |Prompt| GR
+        GR --> |Sanitized| Supervisor
+        Supervisor --> |1. Analyze| Triage
+        Triage --> |2. Payload| Supervisor
+        Supervisor --> |3. Fix| Remediator
+        Remediator --> |4. Diff| Supervisor
+        Supervisor --> |5. Verify| Auditor
+    end
+
+    %% MCP Control Plane
+    subgraph ControlPlane [3. mcp control plane]
+        MCP_Git[GitHub MCP Server]
+        MCP_Az[Azure MCP Server]
+
+        Supervisor --> |mcp:create_issue| MCP_Git
+        Auditor --> |mcp:create_pull_request / mcp:close_issue| MCP_Git
+        Remediator --> |mcp:aks / mcp:storage| MCP_Az
+    end
+
+    %% GitOps & Live Env
+    subgraph GitOps [4. gitops pipeline]
+        PR[Pull Request Gate]
+        GitIssue[GitHub Issue Ticket]
+        Live[Live Azure Resources]
+
+        MCP_Git --> PR
+        MCP_Git --> GitIssue
+        PR --> |Terraform Plan/Apply| Live
+    end
+
+    classDef codex fill:#bbf,stroke:#333,stroke-width:1px;
+    classDef mcp fill:#fbf,stroke:#333,stroke-width:1px;
+    classDef gitops fill:#bfb,stroke:#333,stroke-width:1px;
+
+    class Rules,Supervisor,Triage,Remediator,Auditor codex;
+    class MCP_Git,MCP_Az,MCP_Trivy mcp;
+    class PR,GitIssue,Live gitops;
+```
+
+### 2. Operational Specification
+
+| Component | Interface / Skill | Mechanics | Guardrails & Persona |
+| :--- | :--- | :--- | :--- |
+| **Swarm Orchestrator** | `orchestrator_supervisor` | Coordinates subagents via `invoke_subagent` and `send_message`. Creates GitHub Issues to track alert lifecycle. | Signed off as `[Agent: orchestrator_supervisor]`. Adheres to NIST CSF 2.0 GV.RM-02. |
+| **Risk Profiler** | `security_triage_analyst` | Extracts asset target details, maps to CIS/NIST compliance controls. | Signed off as `[Agent: security_triage_analyst]`. Banned from dynamic persona naming. |
+| **Fix Engineers** | `iac_remediator`, `app_remediator`, `db_remediator` | Generates secure Terraform patches (IaC/Database) or upgrades container packages. | Isolated workspaces. Only modifies target files. Runs Checkov verification. |
+| **Peer Reviewer** | `compliance_auditor` | Evaluates Git diffs, runs Checkov validation, creates PR, and closes GitHub Issue. | Signed off as `[Agent: compliance_auditor]`. Forbidden from merging PRs. |
+| **Input/Output Guardrail** | `NeMo Guardrails / AGENTS.md` | Intercepts prompts/outputs before they reach agents or execute actions. | Enforces workspace security rules, topic limits, and blocks command/role hijackings. |
+
+---
+
+## SOLUTION 2: Azure Function Webhook Remediation Engine
+
+This solution runs as a serverless Python backend, using deterministic rule mappings, LLM cognitive fallback, and direct SDK/REST API client libraries.
+
+### 1. Functional Architecture Diagram
+
+```mermaid
+graph TD
+    %% Telemetry & Ingest
+    subgraph Defender [1. defender & alerts]
+        MD[Microsoft Defender]
+        AM[Azure Monitor]
+        EG[Azure Event Grid]
 
         MD --> EG
-        LA --> EG
         AM --> EG
     end
 
-    %% Cognitive Swarm Phase
-    subgraph Swarm [2. COGNITIVE SWARM]
-        FN[Azure Function Runtime<br/>Python-based orchestration]
-        AI[Azure OpenAI Service<br/>Cognitive LLM processing]
-        
-        Triage[1. Triage Schema & Target Locator]
-        Patch[2. Generative HCL Patching]
-        Copywrite[3. Draft PR Body Description]
+    %% Azure Function
+    subgraph Function [2. azure function webhook]
+        MW{run_guardrails Middleware}
+        Func[function_app.py HTTP Route]
+        PE[remediation_policies.json Policy Engine]
+        LLM[Azure OpenAI / OpenAI Client]
+        Alerts[Teams & Email Alerts<br/>jagadeesh.dharmudu@hcltech.com]
 
-        EG --> |Secure Webhook| FN
-        FN <--> |AI Prompts| AI
-        AI --> Triage
-        AI --> Patch
-        AI --> Copywrite
+        EG --> |Webhook Post| MW
+        MW --> |Violation| Alerts
+        MW --> |Safe Payload| Func
+        Func <--> |Policy Lookup| PE
+        Func <--> |Cognitive Triage / HCL Patch| LLM
     end
 
-    %% Git Control Plane Phase
-    subgraph GitPlane [3. GIT CONTROL PLANE]
-        Repo[Target Git Repository<br/>GitHub / Azure DevOps]
-        Branch[Automated Branch<br/>secops/patch-inc-102458]
-        PR[Pull Request Gateway<br/>Human-in-the-Loop Review]
-        Audit[Audit Gate<br/>Immutable Git Ledger]
+    %% Git control plane
+    subgraph Git [3. git control plane]
+        PyGit[PyGithub Client / REST Fallback]
+        Repo[Target GitHub Repository]
 
-        FN --> |GitHub API| Repo
-        Repo --> Branch
-        Branch --> PR
-        PR --> |Blocker / Human Check| Audit
+        Func --> |Direct API Calls| PyGit
+        PyGit --> |Create Branch / Commit / PR| Repo
     end
 
-    %% Transactional CI/CD Phase
-    subgraph CICD [4. TRANSACTIONAL CI/CD]
-        Pipeline[Deployment Pipeline<br/>GitHub Actions / ADO Pipelines]
-        Plan[terraform plan<br/>Dry-run state verification]
-        Apply[terraform apply<br/>Idempotent execution barrier]
+    classDef serverless fill:#fbb,stroke:#333,stroke-width:1px;
+    classDef api fill:#ffb,stroke:#333,stroke-width:1px;
 
-        Audit --> |Approval Merge| Pipeline
-        Pipeline --> Plan
-        Plan --> Apply
-    end
-
-    %% Live Azure Environment Phase
-    subgraph LiveEnv [5. LIVE AZURE ENVIRONMENT]
-        RG[Azure Resource Group<br/>Target Sub / Scope]
-        Res[Remediated Resource<br/>Storage/Compute/Network/DB]
-        Sync[Synchronized State<br/>Live Cloud matches Git Source]
-
-        Apply --> RG
-        RG --> Res
-        Res --> Sync
-    end
-
-    classDef telemetry fill:#f9f,stroke:#333,stroke-width:1px;
-    classDef orchestrator fill:#bbf,stroke:#333,stroke-width:1px;
-    classDef git fill:#bfb,stroke:#333,stroke-width:1px;
-    classDef cicd fill:#fbb,stroke:#333,stroke-width:1px;
-    classDef live fill:#ffb,stroke:#333,stroke-width:1px;
-
-    class MD,LA,AM,EG telemetry;
-    class FN,AI,Triage,Patch,Copywrite orchestrator;
-    class Repo,Branch,PR,Audit git;
-    class Pipeline,Plan,Apply cicd;
-    class RG,Res,Sync live;
+    class MW,Func,PE,LLM serverless;
+    class PyGit,Repo api;
 ```
 
----
+### 2. Operational Specification
 
-## 2. Deep Dive Lifecycle Mappings & System Specifications
-
-| Lifecycle Phase | Component & Technical Interface | Core Operational Mechanics | OpenAI Cognitive Footprint |
+| Component | Code Module / Interface | Mechanics | Guardrails & Persona |
 | :--- | :--- | :--- | :--- |
-| **DIAGNOSING & INGESTION** | Azure Event Grid System Topic <br/>`monitoringService: "Defender"` | Ingests polymorphic JSON structures from divergent telemetry planes. Standardizes communication via the CloudEvents v1.0 standard, shielding downstream modules from Microsoft event schema modifications. | **Footprint #1: Cognitive Parser & Locator**<br/>Extracts nested variables (e.g. compromised asset) into a unified internal JSON definition and identifies target landing zone files dynamically. |
-| **REMEDIATING & ORCHESTRATION** | Azure Function (Python) & GitHub API | The function checks out the repository context, passes the affected `.tf` block to OpenAI, handles branch creation, commits the altered declarative state, and programmatically spawns a Pull Request. | **Footprint #2: Generative HCL Patching**<br/>Analyzes existing configurations against policy violations and modifies specific attributes safely (e.g. turning public access off, restricting security group ports). |
-| **VERIFYING & CI/CD** | CI/CD Engine & Terraform Core <br/>`terraform plan -out=tfplan` | Triggered dynamically upon PR creation. Runs transactional dry-runs against the active `.tfstate` storage backend to verify structural integrity, syntactic validity, and identify blast radius before changes touch target subscriptions. | *None.*<br/>(Decoupled completely from LLM code generation to enforce strict deterministic safeguards and state file alignment). |
-| **REPORTING & AUDIT** | Pull Request Interface & Git Ledger | Consolidates automated analytical breakdowns directly within the standard engineering workflow. The merged branch generates an immutable, cryptographically signed ledger record inside the version control database. | **Footprint #3: PR Copywriting**<br/>Generates comprehensive Markdown documentation detailing Business Impact Summaries, blast radiuses, and compliance review metadata for SRE sign-off. |
+| **Ingestion Middleware** | `run_guardrails` | Intercepts webhook payloads to verify safety before processing. | Scans for prompt injections, topic drifts, and exposed secrets. Blocks on failure (403). |
+| **Triage & Patching** | `function_app.py` | Parsers extract alert facts. Passes HCL code to OpenAI for surgical patching. | Integrates syntax verification (validate_hcl_syntax). Falls back to local workspace on Git 401. |
+| **Policy Engine** | `remediation_policies.json` | Config-driven rules mapping resource providers to modules. | Restricts patching to specific compliance-defined properties (e.g. storage public access). |
+| **Git Automation** | `PyGithub / GitHub API` | Programmatically creates Git branches, commits HCL patches, and opens PRs. | PR title format standard: `🚨 SecOps Auto-Fix [Severity][AlertID]`. |
+| **Alert Notification** | `send_security_alert` | Integrates with Microsoft Teams Webhook and direct email routing. | Routes guardrail triggers immediately to `jagadeesh.dharmudu@hcltech.com`. |
 
 ---
 
-## 3. Cost Analysis & Total Cost of Ownership (TCO)
+## CONTAINER IMAGE SCAN ANALYSIS AGENT (Solution 1)
 
-This section maps the financial impact of running this autonomous remediation solution:
+This agent parses container image scan telemetry (such as from Trivy or Grype), applies deterministic layer mapping and enrichment feeds, and uses cognitive LLM reasoning only for ambiguous reachability calls before drafting a Pull Request.
 
-### One-Time Setup Costs
-* **All Services (Azure, GitHub, Event Grid)**: **$0.00** (Leverages standard native serverless APIs and existing standard licensing).
+### 1. The 8-Step Pipeline
 
-### Monthly Recurring Operational Costs (Assuming 1,000 incidents/month)
-* **Azure Event Grid (Ingestion)**: **$0.00 / month** (First 100k events/mo are free).
-* **Azure Functions (Serverless Compute)**: **~$0.80 / month** (First 1M requests/mo are free).
-* **Azure Storage (Logs & Meta)**: **~$0.50 / month** (Standard Hot LRS storage).
-* **Azure OpenAI Service (GPT-4o)**: **~$39.00 / month** (Token pay-as-you-go).
-* **Total Cost**: **~$40.30 / month** (Avg. **$0.04** per auto-remediation compared to **$150+ in engineering labor** per manual remediation).
+```mermaid
+graph TD
+    %% Tasks Pipeline
+    subgraph Pipeline [Container Scan Pipeline]
+        S1[① SCAN: trivy.scan_image]
+        S2[② ATTRIBUTE: Layer Mapping]
+        S3[③ DEDUP: Collapse Duplicates]
+        S4[④ ENRICH: EPSS & KEV feeds]
+        S5[⑤ PRE-FILTER: Suppressions]
+        S6[⑥ JUDGE: LLM Reachability]
+        S7[⑦ CONSOLIDATE: Graph Reduction]
+        S8[⑧ DRAFT PR: Create PR Draft]
+
+        S1 --> S2
+        S2 --> S3
+        S3 --> S4
+        S4 --> S5
+        S5 --> |Ambiguous findings| S6
+        S5 --> |Clear findings| S7
+        S6 --> S7
+        S7 --> S8
+    end
+```
+
+### 2. Pipeline Execution Steps
+
+| Step | Operation | Technical Mechanics | LLM vs. Deterministic |
+| :--- | :--- | :--- | :--- |
+| **① SCAN** | `trivy.scan_image` | Ingests raw scan report / SBOM from the Trivy MCP server. | Deterministic (auth: none, in-cluster) |
+| **② ATTRIBUTE** | Layer Mapping | Maps each CVE to specific OCI layers (`base` OS / `app` code / `dep` library). | Deterministic (parses OCI history/manifest) |
+| **③ DEDUP** | Collapse Duplicates | Collapses duplicate findings using a unique key: `cve + pkg + version + layer_sha`. | Deterministic |
+| **④ ENRICH** | Threat Enrichment | Fetches EPSS exploit probability scores and CISA KEV (Known Exploited Vulnerabilities) flags. | Deterministic (parallel threat feed lookups) |
+| **⑤ PRE-FILTER** | Rules Engine | Auto-suppresses build-only dependencies (e.g., `gcc`, `make`) and applies `won't-fix` rules. Bypassed for PCI-DSS payment images. | Deterministic Rules |
+| **⑥ JUDGE** | Reachability & Upgrade | Resolves ambiguous reachability paths and conducts upgrade safety / breaking-change analysis. | **Cognitive LLM** (Sonnet / GPT-4o / GPT-5.5) |
+| **⑦ CONSOLIDATE** | Graph Reduction | Groups findings by fix path (e.g., '1 base image bump = N CVEs fixed'). | Deterministic Graph Reduction |
+| **⑧ DRAFT PR** | `create_pull_request` | Programmatically commits patched files and opens a draft PR. | Deterministic (requires human approval: true) |
+
+### 3. Implementation Reference
+
+The container image scan analysis pipeline is fully implemented inside the workspace helper script:
+* **Remediation Script**: [trivy_analyzer.py](file:///c:/myailearn/projects/azureops-test-harness/scripts/trivy_analyzer.py)
+* **Remediation Plan**: Resolves container package CVEs (such as OpenSSL) and exposes the `Task` abstraction class to manage step outcomes, durations, and outputs dynamically.
 
