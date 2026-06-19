@@ -1,0 +1,50 @@
+{
+  "SchemaVersion": 1,
+  "Scanner": "OWASP ZAP",
+  "ScanType": "DAST",
+  "Target": {
+    "URL": "https://app-drift-holt8j.azurewebsites.net",
+    "Method": "Automated Active Scan"
+  },
+  "Results": [
+    {
+      "AlertID": "10016",
+      "Risk": "High",
+      "Confidence": "Medium",
+      "Title": "Web Browser XSS Protection Not Enabled",
+      "Description": "The Anti-XSS protection header (X-XSS-Protection) is not set or is disabled. This allows reflected XSS attacks to execute in the browser.",
+      "CWE": "CWE-933",
+      "OWASP": "A05:2021 - Security Misconfiguration",
+      "URL": "https://app-drift-holt8j.azurewebsites.net/api/users",
+      "Evidence": "Response header missing: X-XSS-Protection",
+      "Remediation": "Set the response header X-XSS-Protection: 1; mode=block in the application middleware or reverse proxy configuration.",
+      "TargetFile": "app/middleware/security_headers.py"
+    },
+    {
+      "AlertID": "10021",
+      "Risk": "Medium",
+      "Confidence": "High",
+      "Title": "X-Content-Type-Options Header Missing",
+      "Description": "The Anti-MIME-Sniffing header X-Content-Type-Options is not set to 'nosniff', which allows MIME type confusion attacks.",
+      "CWE": "CWE-693",
+      "OWASP": "A05:2021 - Security Misconfiguration",
+      "URL": "https://app-drift-holt8j.azurewebsites.net/api/upload",
+      "Evidence": "Response header missing: X-Content-Type-Options",
+      "Remediation": "Set the response header X-Content-Type-Options: nosniff in the application middleware.",
+      "TargetFile": "app/middleware/security_headers.py"
+    },
+    {
+      "AlertID": "40012",
+      "Risk": "High",
+      "Confidence": "High",
+      "Title": "Cross-Site Scripting (Reflected)",
+      "Description": "The endpoint /api/search reflects user input in the response body without proper encoding. This allows an attacker to inject malicious JavaScript via the 'q' parameter.",
+      "CWE": "CWE-79",
+      "OWASP": "A03:2021 - Injection",
+      "URL": "https://app-drift-holt8j.azurewebsites.net/api/search?q=<script>alert(1)</script>",
+      "Evidence": "<script>alert(1)</script> found in response body",
+      "Remediation": "Sanitize all user inputs and apply output encoding. Use a Content Security Policy (CSP) header.",
+      "TargetFile": "app/routes/search.py"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schemaId": "azureMonitorCommonAlertSchema",
+  "data": {
+    "essentials": {
+      "alertId": "/subscriptions/mock-sub-123/providers/Microsoft.AlertsManagement/alerts/db-drift-890",
+      "alertRule": "SQL Server Vulnerability Assessment - Public Network Access Enabled",
+      "severity": "Sev1",
+      "signalType": "Metric",
+      "monitorCondition": "Fired",
+      "monitoringService": "Platform",
+      "alertTargetIDs": [
+        "/subscriptions/mock-sub-123/resourceGroups/rg-azureops-demo/providers/Microsoft.Sql/servers/sqlserver-drift-test"
+      ],
+      "originAlertId": "DB_PUBLIC_ACCESS_ALERT"
+    },
+    "alertContext": {
+      "properties": {
+        "title": "SQL Server Exposed to Public Internet",
+        "description": "The SQL Server sqlserver-drift-test has a firewall rule 'AllowAllInternet' allowing 0.0.0.0 to 255.255.255.255, violating CIS Azure benchmark 4.1.3.",
+        "remediation": "Delete the overly permissive firewall rule or restrict start_ip_address and end_ip_address to known private IP ranges.",
+        "complianceFramework": "CIS Microsoft Azure Foundations Benchmark v1.3.0",
+        "targetFile": "terraform/modules/database/main.tf"
+      }
+    }
+  }
+}
