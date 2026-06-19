@@ -1,0 +1,120 @@
+{
+  "image_uri": "azureops-app:latest",
+  "timestamp": "2026-06-19T15:20:40Z",
+  "steps": [
+    {
+      "name": "SCAN",
+      "description": "trivy.scan_image (MCP) -> raw CVEs + SBOM",
+      "status": "COMPLETED",
+      "duration_seconds": 0.001,
+      "error_message": null,
+      "input_metadata": {
+        "image_uri": "azureops-app:latest",
+        "payload_path": "payloads/trivy_container_openssl_cve.json"
+      },
+      "output_metadata": {
+        "vulnerability_count": 1,
+        "secret_count": 0
+      }
+    },
+    {
+      "name": "ATTRIBUTE",
+      "description": "Map each CVE -> image layer (base / app / dep)",
+      "status": "COMPLETED",
+      "duration_seconds": 0.0,
+      "error_message": null,
+      "input_metadata": {},
+      "output_metadata": {
+        "attributed_findings": 1
+      }
+    },
+    {
+      "name": "DEDUP",
+      "description": "Collapse multi-layer + multi-tag duplicates",
+      "status": "COMPLETED",
+      "duration_seconds": 0.0,
+      "error_message": null,
+      "input_metadata": {},
+      "output_metadata": {
+        "unique_findings": 1,
+        "duplicates_removed": 0
+      }
+    },
+    {
+      "name": "ENRICH",
+      "description": "EPSS score + KEV flag (MCP feeds, parallel)",
+      "status": "COMPLETED",
+      "duration_seconds": 0.002,
+      "error_message": null,
+      "input_metadata": {},
+      "output_metadata": {
+        "enriched_items": 1,
+        "active_kev_count": 1
+      }
+    },
+    {
+      "name": "PRE-FILTER",
+      "description": "Reachability heuristics + won't-fix + build-only suppression",
+      "status": "COMPLETED",
+      "duration_seconds": 0.0,
+      "error_message": null,
+      "input_metadata": {},
+      "output_metadata": {
+        "total_items": 1,
+        "suppressed": 0,
+        "retained": 1
+      }
+    },
+    {
+      "name": "JUDGE",
+      "description": "LLM reachability on ambiguous CVEs + base-image upgrade recommendation",
+      "status": "COMPLETED",
+      "duration_seconds": 12.629,
+      "error_message": null,
+      "input_metadata": {},
+      "output_metadata": {
+        "judged_items": 1,
+        "reachable_items": 1,
+        "remediation_priorities": {
+          "High": 1,
+          "Low": 0
+        }
+      }
+    },
+    {
+      "name": "CONSOLIDATE",
+      "description": "Group by fix path -> '1 base bump = N fixes'",
+      "status": "COMPLETED",
+      "duration_seconds": 0.0,
+      "error_message": null,
+      "input_metadata": {},
+      "output_metadata": {
+        "consolidated_categories": 1,
+        "individual_package_updates": 0
+      }
+    },
+    {
+      "name": "DRAFT PR",
+      "description": "github.create_pull_request with human review gate",
+      "status": "COMPLETED",
+      "duration_seconds": 0.002,
+      "error_message": null,
+      "input_metadata": {
+        "requires_human_approval": true,
+        "draft": true
+      },
+      "output_metadata": {
+        "pr_drafted": true,
+        "pr_body_path": "terraform/container_remediation_pr.md",
+        "requires_human_approval": true
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "summary": {
+    "total_raw_findings": 1,
+    "after_dedup": 1,
+    "retained_after_filter": 1,
+    "consolidated_fixes": 1
+  }
+}

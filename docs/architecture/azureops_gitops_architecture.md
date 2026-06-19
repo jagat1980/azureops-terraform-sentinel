@@ -143,3 +143,55 @@ graph TD
 | **Policy Engine** | `remediation_policies.json` | Config-driven rules mapping resource providers to modules. | Restricts patching to specific compliance-defined properties (e.g. storage public access). |
 | **Git Automation** | `PyGithub / GitHub API` | Programmatically creates Git branches, commits HCL patches, and opens PRs. | PR title format standard: `🚨 SecOps Auto-Fix [Severity][AlertID]`. |
 | **Alert Notification** | `send_security_alert` | Integrates with Microsoft Teams Webhook and direct email routing. | Routes guardrail triggers immediately to `jagadeesh.dharmudu@hcltech.com`. |
+
+---
+
+## CONTAINER IMAGE SCAN ANALYSIS AGENT (Solution 1)
+
+This agent parses container image scan telemetry (such as from Trivy or Grype), applies deterministic layer mapping and enrichment feeds, and uses cognitive LLM reasoning only for ambiguous reachability calls before drafting a Pull Request.
+
+### 1. The 8-Step Pipeline
+
+```mermaid
+graph TD
+    %% Tasks Pipeline
+    subgraph Pipeline [Container Scan Pipeline]
+        S1[① SCAN: trivy.scan_image]
+        S2[② ATTRIBUTE: Layer Mapping]
+        S3[③ DEDUP: Collapse Duplicates]
+        S4[④ ENRICH: EPSS & KEV feeds]
+        S5[⑤ PRE-FILTER: Suppressions]
+        S6[⑥ JUDGE: LLM Reachability]
+        S7[⑦ CONSOLIDATE: Graph Reduction]
+        S8[⑧ DRAFT PR: Create PR Draft]
+
+        S1 --> S2
+        S2 --> S3
+        S3 --> S4
+        S4 --> S5
+        S5 --> |Ambiguous findings| S6
+        S5 --> |Clear findings| S7
+        S6 --> S7
+        S7 --> S8
+    end
+```
+
+### 2. Pipeline Execution Steps
+
+| Step | Operation | Technical Mechanics | LLM vs. Deterministic |
+| :--- | :--- | :--- | :--- |
+| **① SCAN** | `trivy.scan_image` | Ingests raw scan report / SBOM from the Trivy MCP server. | Deterministic (auth: none, in-cluster) |
+| **② ATTRIBUTE** | Layer Mapping | Maps each CVE to specific OCI layers (`base` OS / `app` code / `dep` library). | Deterministic (parses OCI history/manifest) |
+| **③ DEDUP** | Collapse Duplicates | Collapses duplicate findings using a unique key: `cve + pkg + version + layer_sha`. | Deterministic |
+| **④ ENRICH** | Threat Enrichment | Fetches EPSS exploit probability scores and CISA KEV (Known Exploited Vulnerabilities) flags. | Deterministic (parallel threat feed lookups) |
+| **⑤ PRE-FILTER** | Rules Engine | Auto-suppresses build-only dependencies (e.g., `gcc`, `make`) and applies `won't-fix` rules. Bypassed for PCI-DSS payment images. | Deterministic Rules |
+| **⑥ JUDGE** | Reachability & Upgrade | Resolves ambiguous reachability paths and conducts upgrade safety / breaking-change analysis. | **Cognitive LLM** (Sonnet / GPT-4o / GPT-5.5) |
+| **⑦ CONSOLIDATE** | Graph Reduction | Groups findings by fix path (e.g., '1 base image bump = N CVEs fixed'). | Deterministic Graph Reduction |
+| **⑧ DRAFT PR** | `create_pull_request` | Programmatically commits patched files and opens a draft PR. | Deterministic (requires human approval: true) |
+
+### 3. Implementation Reference
+
+The container image scan analysis pipeline is fully implemented inside the workspace helper script:
+* **Remediation Script**: [trivy_analyzer.py](file:///c:/myailearn/projects/azureops-test-harness/scripts/trivy_analyzer.py)
+* **Remediation Plan**: Resolves container package CVEs (such as OpenSSL) and exposes the `Task` abstraction class to manage step outcomes, durations, and outputs dynamically.
+
