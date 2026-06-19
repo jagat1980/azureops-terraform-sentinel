@@ -1,12 +1,12 @@
 {
   "image_uri": "azureops-app:latest",
-  "timestamp": "2026-06-19T15:20:40Z",
+  "timestamp": "2026-06-19T15:55:24Z",
   "steps": [
     {
       "name": "SCAN",
       "description": "trivy.scan_image (MCP) -> raw CVEs + SBOM",
       "status": "COMPLETED",
-      "duration_seconds": 0.001,
+      "duration_seconds": 0.021,
       "error_message": null,
       "input_metadata": {
         "image_uri": "azureops-app:latest",
@@ -69,7 +69,7 @@
       "name": "JUDGE",
       "description": "LLM reachability on ambiguous CVEs + base-image upgrade recommendation",
       "status": "COMPLETED",
-      "duration_seconds": 12.629,
+      "duration_seconds": 0.0,
       "error_message": null,
       "input_metadata": {},
       "output_metadata": {
