@@ -1,0 +1,44 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "azureops-test-harness",
+  "ArtifactType": "filesystem",
+  "Metadata": {
+    "Scanner": "SonarQube",
+    "ScanType": "SAST",
+    "ProjectKey": "azureops-test-harness",
+    "Branch": "feat/add-container-module"
+  },
+  "Results": [
+    {
+      "Target": "app/routes/auth.py",
+      "Class": "source-code",
+      "Type": "python",
+      "Vulnerabilities": [
+        {
+          "RuleID": "python:S3649",
+          "Severity": "CRITICAL",
+          "Title": "SQL Injection - User input concatenated in SQL query",
+          "Description": "User-controlled input is concatenated directly into a SQL query string without parameterization. An attacker can manipulate the query to access, modify, or delete database records.",
+          "OWASP": "A03:2021 - Injection",
+          "CWE": "CWE-89",
+          "TargetFile": "app/routes/auth.py",
+          "LineNumber": 42,
+          "VulnerableCode": "cursor.execute(\"SELECT * FROM users WHERE username='\" + request.form['username'] + \"' AND password='\" + request.form['password'] + \"'\")",
+          "Remediation": "Use parameterized queries: cursor.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))"
+        },
+        {
+          "RuleID": "python:S5131",
+          "Severity": "HIGH",
+          "Title": "Cross-Site Scripting (XSS) - Reflected user input in response",
+          "Description": "User input from query parameters is rendered directly in an HTML response without escaping, allowing reflected XSS attacks.",
+          "OWASP": "A03:2021 - Injection",
+          "CWE": "CWE-79",
+          "TargetFile": "app/routes/dashboard.py",
+          "LineNumber": 18,
+          "VulnerableCode": "return f\"<h1>Welcome {request.args.get('name')}</h1>\"",
+          "Remediation": "Use template engine auto-escaping (Jinja2) or markupsafe.escape()"
+        }
+      ]
+    }
+  ]
+}

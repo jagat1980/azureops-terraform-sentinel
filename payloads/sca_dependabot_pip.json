@@ -1,0 +1,51 @@
+{
+  "SchemaVersion": 1,
+  "Scanner": "Dependabot",
+  "ScanType": "SCA",
+  "Repository": "jagat1980/azureops-terraform-sentinel",
+  "Metadata": {
+    "Ecosystem": "pip",
+    "ManifestFile": "app/requirements.txt"
+  },
+  "Results": [
+    {
+      "DependencyName": "flask",
+      "InstalledVersion": "2.2.2",
+      "FixedVersion": "2.3.2",
+      "Severity": "HIGH",
+      "VulnerabilityID": "CVE-2023-30861",
+      "Title": "Flask session cookie vulnerability",
+      "Description": "Flask versions prior to 2.3.2 are vulnerable to a session cookie timing attack. When the response is cacheable, session cookies may be served to incorrect clients, allowing session impersonation.",
+      "CWE": "CWE-539",
+      "OWASP": "A07:2021 - Identification and Authentication Failures",
+      "TargetFile": "app/requirements.txt",
+      "Remediation": "Upgrade flask to version 2.3.2 or later: pip install flask>=2.3.2"
+    },
+    {
+      "DependencyName": "requests",
+      "InstalledVersion": "2.28.0",
+      "FixedVersion": "2.31.0",
+      "Severity": "MEDIUM",
+      "VulnerabilityID": "CVE-2023-32681",
+      "Title": "Requests Proxy-Authorization header leak",
+      "Description": "Requests versions prior to 2.31.0 leak Proxy-Authorization headers to the destination server when redirected to an HTTPS endpoint from an HTTP one. This may expose credentials to unintended third parties.",
+      "CWE": "CWE-200",
+      "OWASP": "A01:2021 - Broken Access Control",
+      "TargetFile": "app/requirements.txt",
+      "Remediation": "Upgrade requests to version 2.31.0 or later: pip install requests>=2.31.0"
+    },
+    {
+      "DependencyName": "cryptography",
+      "InstalledVersion": "39.0.0",
+      "FixedVersion": "41.0.4",
+      "Severity": "CRITICAL",
+      "VulnerabilityID": "CVE-2023-38325",
+      "Title": "Cryptography PKCS7 certificate parsing crash",
+      "Description": "The cryptography package before 41.0.4 allows a denial of service via a crafted PKCS7 certificate. An attacker can crash the application by sending a malformed certificate to any endpoint that processes PKCS7 data.",
+      "CWE": "CWE-295",
+      "OWASP": "A02:2021 - Cryptographic Failures",
+      "TargetFile": "app/requirements.txt",
+      "Remediation": "Upgrade cryptography to version 41.0.4 or later: pip install cryptography>=41.0.4"
+    }
+  ]
+}
