@@ -424,38 +424,26 @@ Format your response as a JSON object matching this schema:
 
         # Call LLM or use offline fallback if no API key is set
         judgments_map = {}
-        api_provider = os.getenv("AI_PROVIDER", "openai").strip().lower()
-        has_creds = os.getenv("OPENAI_API_KEY") or os.getenv("AZURE_OPENAI_KEY")
+        # Strictly use OpenAI per user request
+        api_provider = "openai"
+        openai_key = os.getenv("OPENAI_API_KEY")
 
-        if HAS_OPENAI and has_creds:
+        if HAS_OPENAI and openai_key:
             try:
-                logging.info(f"🧠 Engaging LLM Judge via provider: {api_provider}")
-                if api_provider == "openai":
-                    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                    model = os.getenv("OPENAI_MODEL", "gpt-4o")
-                    response = client.chat.completions.create(
-                        model=model,
-                        messages=[{"role": "user", "content": prompt}],
-                        response_format={"type": "json_object"}
-                    )
-                else:
-                    client = AzureOpenAI(
-                        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-                        api_key=os.getenv("AZURE_OPENAI_KEY"),
-                        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-05-01-preview")
-                    )
-                    deployment = os.getenv("OPENAI_DEPLOYMENT_NAME")
-                    response = client.chat.completions.create(
-                        model=deployment,
-                        messages=[{"role": "user", "content": prompt}],
-                        response_format={"type": "json_object"}
-                    )
+                logging.info("🧠 Engaging OpenAI LLM Judge")
+                client = OpenAI(api_key=openai_key)
+                model = os.getenv("OPENAI_MODEL", "gpt-4o")
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
                 
                 resp_json = json.loads(response.choices[0].message.content)
                 for j in resp_json.get("judgments", []):
                     judgments_map[j["id"]] = j
             except Exception as ex:
-                logging.warning(f"⚠️ LLM Call failed, using deterministic fallback: {str(ex)}")
+                logging.warning(f"⚠️ OpenAI LLM Call failed, using deterministic fallback: {str(ex)}")
                 
         # If offline or failed, apply deterministic fallback logic
         if not judgments_map:
