@@ -36,7 +36,7 @@ resource "azurerm_linux_web_app" "vulnerable_app" {
     scm_minimum_tls_version           = "1.2"
 
     application_stack {
-      python_version = "3.9"
+      python_version = "3.11"
     }
   }
 
