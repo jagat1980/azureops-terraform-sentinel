@@ -306,6 +306,17 @@ def run_guardrails(payload: dict) -> tuple[bool, str]:
         return False, "Guardrail Violation: Raw unmasked credentials exposed in payload."
 
     return True, "Passed"
+@app.route(route="demo-dashboard", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def demo_dashboard(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Serving Swarm Trigger Dashboard.")
+    try:
+        html_path = os.path.join(os.path.dirname(__file__), "dashboard.html")
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return func.HttpResponse(html_content, mimetype="text/html")
+    except Exception as e:
+        return func.HttpResponse(f"Error loading dashboard: {str(e)}", status_code=500)
+
 @app.route(route="swarm-triage", methods=["POST"])
 def swarm_triage(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("🚨 AzureOps Swarm: Ingestion Webhook Event Captured.")

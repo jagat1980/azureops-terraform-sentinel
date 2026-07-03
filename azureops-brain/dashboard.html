@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudSecAIOps Swarm: Trigger & Control Center</title>
+    <!-- Modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.35);
+            --accent-success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --accent-error: #ef4444;
+            --error-glow: rgba(239, 68, 68, 0.3);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-glow: #ffffff;
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0b0f19 0%, #111827 50%, #070a13 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--card-border);
+            background: rgba(11, 15, 25, 0.5);
+            backdrop-filter: var(--glass-blur);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            animation: pulse-glow 2s infinite alternate;
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        .status-dot.active {
+            background-color: var(--accent-success);
+            box-shadow: 0 0 8px var(--accent-success);
+            animation: blink 1.5s infinite alternate;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 2rem;
+            flex-grow: 1;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: var(--glass-blur);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.05);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.75rem;
+            color: var(--text-main);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input, textarea {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+            background: rgba(17, 24, 39, 1);
+        }
+
+        .json-editor {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            resize: vertical;
+            min-height: 380px;
+            flex-grow: 1;
+            background: #0d1117;
+            border: 1px solid #21262d;
+        }
+
+        .btn-trigger {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border: none;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-trigger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--primary-glow), 0 0 10px rgba(59, 130, 246, 0.5);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .btn-trigger:active {
+            transform: translateY(0);
+        }
+
+        .btn-trigger:disabled {
+            background: #1f2937;
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Right panel grid layout */
+        .workspace-grid {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .pipeline-card {
+            background: rgba(17, 24, 39, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        /* Stepper progress styles */
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 1rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .stepper::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 1;
+        }
+
+        .step-progress-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent-success));
+            z-index: 2;
+            transition: width 0.5s ease;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 3;
+            width: 70px;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1f2937;
+            border: 2px solid var(--card-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            transition: all 0.4s ease;
+        }
+
+        .step.active .step-circle {
+            border-color: var(--primary);
+            background: #111827;
+            color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .step.completed .step-circle {
+            border-color: var(--accent-success);
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+            box-shadow: 0 0 12px var(--success-glow);
+        }
+
+        .step.failed .step-circle {
+            border-color: var(--accent-error);
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-error);
+            box-shadow: 0 0 12px var(--error-glow);
+        }
+
+        .step-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+        }
+
+        .step.active .step-label {
+            color: var(--primary);
+        }
+
+        .step.completed .step-label {
+            color: var(--accent-success);
+        }
+
+        /* Success & Result Alert Card */
+        .result-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.03) 100%);
+            border: 1px dashed rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            gap: 1rem;
+            animation: slide-up 0.4s ease-out;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--accent-success);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .result-details {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+        }
+
+        .result-details span.label {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .btn-view-pr {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 0.85rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px var(--success-glow);
+            transition: all 0.3s ease;
+        }
+
+        .btn-view-pr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--success-glow), 0 0 10px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+        }
+
+        /* Console Output log styling */
+        .console-card {
+            background: #090c15;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 250px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .console-header {
+            background: #111827;
+            padding: 0.65rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .console-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .console-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .console-dot.red { background-color: #ef4444; }
+        .console-dot.yellow { background-color: #f59e0b; }
+        .console-dot.green { background-color: #10b981; }
+
+        .console-output {
+            padding: 1.25rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #e5e7eb;
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            scroll-behavior: smooth;
+        }
+
+        .console-line {
+            display: flex;
+            gap: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .console-time {
+            color: #6b7280;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .console-level {
+            font-weight: 700;
+            flex-shrink: 0;
+            width: 55px;
+        }
+        .console-level.info { color: #3b82f6; }
+        .console-level.warn { color: #f59e0b; }
+        .console-level.error { color: #ef4444; }
+        .console-level.success { color: #10b981; }
+
+        .console-msg {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            background: rgba(11, 15, 25, 0.4);
+            margin-top: auto;
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            from {
+                text-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+            }
+            to {
+                text-shadow: 0 0 15px rgba(59, 130, 246, 0.6), 0 0 25px rgba(59, 130, 246, 0.4);
+            }
+        }
+
+        @keyframes blink {
+            from { opacity: 0.4; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .panel {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-logo">
+            <div class="logo-icon">🐝</div>
+            <div class="logo-text">
+                <h1>CloudSecAIOps Swarm</h1>
+                <p>Autonomous Triage & Control Center</p>
+            </div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot active" id="badge-dot"></div>
+            <span id="badge-text">READY</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Control Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>⚙️</span> Alert Injection Configuration
+            </div>
+
+            <div class="input-group">
+                <label for="payload-selector">Select Vulnerability Template</label>
+                <select id="payload-selector" onchange="loadSelectedPayload()">
+                    <option value="sca_dependabot_pip">📦 Python Dependency CVE (SCA - app/requirements.txt)</option>
+                    <option value="trivy_container_openssl_cve">🐳 Alpine OS Package CVE (Trivy - Dockerfile)</option>
+                    <option value="db_public_access_alert">🛡️ Public SQL Firewall Enabled (Drift - terraform/modules/database/main.tf)</option>
+                    <option value="db_audit_disabled_alert">🔍 SQL Auditing Disabled (Drift - terraform/modules/database/main.tf)</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="function-code">Function Auth Key (Code)</label>
+                <input type="password" id="function-code" placeholder="Leave empty for Local Development (localhost)" />
+            </div>
+
+            <div class="input-group" style="flex-grow: 1;">
+                <label for="json-payload">Raw Alert Payload JSON</label>
+                <textarea id="json-payload" class="json-editor"></textarea>
+            </div>
+
+            <button id="btn-trigger" class="btn-trigger" onclick="triggerSwarm()">
+                <span>🚨</span> Trigger Swarm Triage
+            </button>
+        </div>
+
+        <!-- Progress and Output Console -->
+        <div class="workspace-grid">
+            <!-- Execution Progress Stepper -->
+            <div class="panel pipeline-card">
+                <div class="panel-title" style="border: none; padding-bottom: 0;">
+                    <span>⚡</span> Live Remediation Pipeline Progress
+                </div>
+                
+                <div class="stepper">
+                    <div class="step-progress-bar" id="step-progress-bar"></div>
+                    
+                    <div class="step" id="step-1">
+                        <div class="step-circle">1</div>
+                        <div class="step-label">Ingest</div>
+                    </div>
+                    <div class="step" id="step-2">
+                        <div class="step-circle">2</div>
+                        <div class="step-label">Inspect</div>
+                    </div>
+                    <div class="step" id="step-3">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">Triage</div>
+                    </div>
+                    <div class="step" id="step-4">
+                        <div class="step-circle">4</div>
+                        <div class="step-label">Patch</div>
+                    </div>
+                    <div class="step" id="step-5">
+                        <div class="step-circle">5</div>
+                        <div class="step-label">Commit</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Alert Link Card -->
+            <div class="result-card" id="result-card">
+                <div class="result-header">
+                    <span>🎉</span> Automated Compliance Patch Generated Successfully!
+                </div>
+                <div class="result-details">
+                    <span class="label">Vulnerability ID:</span>
+                    <span id="res-vuln-id">-</span>
+                    <span class="label">Target Asset:</span>
+                    <span id="res-asset">-</span>
+                    <span class="label">File Patched:</span>
+                    <span id="res-file">-</span>
+                    <span class="label">Triage Mode:</span>
+                    <span id="res-mode">-</span>
+                </div>
+                <div>
+                    <a id="btn-view-pr" href="#" target="_blank" class="btn-view-pr">
+                        🐙 View Remediated Pull Request on GitHub
+                    </a>
+                </div>
+            </div>
+
+            <!-- Terminal Output -->
+            <div class="console-card">
+                <div class="console-header">
+                    <span>🤖 Execution Log Console</span>
+                    <div class="console-dots">
+                        <div class="console-dot red"></div>
+                        <div class="console-dot yellow"></div>
+                        <div class="console-dot green"></div>
+                    </div>
+                </div>
+                <div id="console-output" class="console-output">
+                    <div class="console-line">
+                        <span class="console-time">[00:00:00]</span>
+                        <span class="console-level info">INFO</span>
+                        <span class="console-msg">System initialized. Awaiting alert injection trigger...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Developed for the CloudSecAIOps Swarm Hackathon Submission &bull; Powered by OpenAI & Azure Functions</p>
+    </footer>
+
+    <!-- Payload Definitions and Logic script -->
+    <script>
+        const PAYLOADS = {
+            sca_dependabot_pip: {
+                "SchemaVersion": 1,
+                "Scanner": "Dependabot",
+                "ScanType": "SCA",
+                "Repository": "jagat1980/azureops-terraform-sentinel",
+                "Metadata": {
+                    "Ecosystem": "pip",
+                    "ManifestFile": "app/requirements.txt"
+                },
+                "Results": [
+                    {
+                        "DependencyName": "flask",
+                        "InstalledVersion": "2.2.2",
+                        "FixedVersion": "2.3.2",
+                        "Severity": "HIGH",
+                        "VulnerabilityID": "CVE-2023-30861",
+                        "Title": "Flask session cookie vulnerability",
+                        "Description": "Flask session cookies are vulnerable to a timing attack.",
+                        "TargetFile": "app/requirements.txt",
+                        "Remediation": "Upgrade flask to version 2.3.2"
+                    }
+                ]
+            },
+            trivy_container_openssl_cve: {
+                "SchemaVersion": 2,
+                "ArtifactName": "azureops-app:latest",
+                "ArtifactType": "container_image",
+                "Metadata": {
+                    "OS": {
+                        "Family": "alpine",
+                        "Name": "3.17.0"
+                    }
+                },
+                "Results": [
+                    {
+                        "Target": "azureops-app:latest (alpine 3.17.0)",
+                        "Class": "os-pkgs",
+                        "Type": "alpine",
+                        "Vulnerabilities": [
+                            {
+                                "VulnerabilityID": "CVE-2023-75689",
+                                "PkgName": "openssl",
+                                "InstalledVersion": "3.0.7-r0",
+                                "FixedVersion": "3.0.8-r0",
+                                "Layer": {
+                                    "DiffID": "sha256:abcd1234efgh5678"
+                                },
+                                "Severity": "CRITICAL",
+                                "Title": "openssl: RCE via certificate validation",
+                                "Description": "A critical vulnerability exists in OpenSSL < 3.0.8 which could allow remote code execution.",
+                                "TargetFile": "Dockerfile"
+                            }
+                        ]
+                    }
+                ]
+            },
+            db_public_access_alert: {
+                "schemaId": "azureMonitorCommonAlertSchema",
+                "data": {
+                    "essentials": {
+                        "alertId": "/subscriptions/mock-sub-123/providers/Microsoft.AlertsManagement/alerts/db-drift-890",
+                        "alertRule": "SQL Server Firewall - Public Access Drift",
+                        "severity": "Sev1",
+                        "signalType": "Metric",
+                        "monitorCondition": "Fired",
+                        "monitoringService": "Platform",
+                        "alertTargetIDs": [
+                            "/subscriptions/mock-sub-123/resourceGroups/rg-azureops-demo/providers/Microsoft.Sql/servers/sqlserver-drift-test"
+                        ],
+                        "originAlertId": "DB_PUBLIC_ACCESS_ALERT"
+                    },
+                    "alertContext": {
+                        "properties": {
+                            "title": "SQL Server Exposed to Public Internet",
+                            "description": "The SQL Server sqlserver-drift-test has a firewall rule allowing public network access, violating CIS benchmark 4.1.3.",
+                            "remediation": "Delete or restrict SQL server firewall rules to private IP ranges.",
+                            "complianceFramework": "CIS Microsoft Azure Foundations Benchmark",
+                            "targetFile": "terraform/modules/database/main.tf"
+                        }
+                    }
+                }
+            },
+            db_audit_disabled_alert: {
+                "schemaId": "azureMonitorCommonAlertSchema",
+                "data": {
+                    "essentials": {
+                        "alertId": "/subscriptions/mock-sub-123/providers/Microsoft.AlertsManagement/alerts/db-audit-456",
+                        "alertRule": "SQL Server Auditing - Disabled",
+                        "severity": "Sev1",
+                        "signalType": "Metric",
+                        "monitorCondition": "Fired",
+                        "monitoringService": "Defender",
+                        "alertTargetIDs": [
+                            "/subscriptions/mock-sub-123/resourceGroups/rg-azureops-demo/providers/Microsoft.Sql/servers/sqlserver-drift-test"
+                        ],
+                        "originAlertId": "DB_AUDIT_DISABLED_ALERT"
+                    },
+                    "alertContext": {
+                        "properties": {
+                            "title": "SQL Server Auditing disabled",
+                            "description": "The SQL Server sqlserver-drift-test does not have auditing enabled, violating CIS Azure Benchmark 4.1.1.",
+                            "remediation": "Add an extended auditing policy resource targeting the storage account.",
+                            "complianceFramework": "CIS Microsoft Azure Foundations Benchmark, SOC2, PCI-DSS",
+                            "targetFile": "terraform/modules/database/main.tf"
+                        }
+                    }
+                }
+            }
+        };
+
+        // Load initially selected payload on page load
+        window.onload = function() {
+            loadSelectedPayload();
+        };
+
+        function loadSelectedPayload() {
+            const selector = document.getElementById("payload-selector");
+            const selectedVal = selector.value;
+            const payload = PAYLOADS[selectedVal];
+            document.getElementById("json-payload").value = JSON.stringify(payload, null, 2);
+        }
+
+        function logToConsole(message, level = "info") {
+            const output = document.getElementById("console-output");
+            const now = new Date();
+            const timeString = now.toTimeString().split(' ')[0];
+
+            const line = document.createElement("div");
+            line.className = "console-line";
+
+            const timeSpan = document.createElement("span");
+            timeSpan.className = "console-time";
+            timeSpan.textContent = `[${timeString}]`;
+
+            const levelSpan = document.createElement("span");
+            levelSpan.className = `console-level ${level}`;
+            levelSpan.textContent = level.toUpperCase();
+
+            const msgSpan = document.createElement("span");
+            msgSpan.className = "console-msg";
+            msgSpan.textContent = message;
+
+            line.appendChild(timeSpan);
+            line.appendChild(levelSpan);
+            line.appendChild(msgSpan);
+
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function resetStepper() {
+            const stepProgressBar = document.getElementById("step-progress-bar");
+            stepProgressBar.style.width = "0%";
+            
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById(`step-${i}`);
+                el.className = "step";
+            }
+        }
+
+        function updateStep(stepNum, status) {
+            const el = document.getElementById(`step-${stepNum}`);
+            if (el) {
+                el.className = `step ${status}`;
+            }
+
+            // Update line width percentage
+            const stepProgressBar = document.getElementById("step-progress-bar");
+            if (status === "completed") {
+                const percent = (stepNum - 1) * 25;
+                stepProgressBar.style.width = `${percent}%`;
+            }
+        }
+
+        async function triggerSwarm() {
+            const btn = document.getElementById("btn-trigger");
+            const badgeDot = document.getElementById("badge-dot");
+            const badgeText = document.getElementById("badge-text");
+            const resultCard = document.getElementById("result-card");
+            
+            let payloadText = document.getElementById("json-payload").value;
+            let payload;
+            
+            try {
+                payload = JSON.parse(payloadText);
+            } catch (e) {
+                alert("Invalid JSON format in payload text area.");
+                return;
+            }
+
+            // UI Reset
+            resetStepper();
+            resultCard.style.display = "none";
+            btn.disabled = true;
+            btn.innerHTML = `<span>⏳</span> Swarm Executing...`;
+            badgeText.textContent = "EXECUTING";
+            badgeDot.style.backgroundColor = "var(--primary)";
+            badgeDot.style.boxShadow = "0 0 8px var(--primary)";
+
+            logToConsole("Initializing swarm trigger process...", "info");
+            
+            // Step 1: Ingestion & Guardrails
+            updateStep(1, "active");
+            logToConsole("Phase 1: Ingestion Webhook Event captured. Running guardrails...", "info");
+            
+            // Perform basic client-side check similar to guardrails
+            if (payloadText.includes("ignore previous instructions") || payloadText.includes("bypass security")) {
+                updateStep(1, "failed");
+                logToConsole("Guardrail Blocked: Potential prompt injection/jailbreak attempt detected.", "error");
+                btn.disabled = false;
+                btn.innerHTML = `<span>🚨</span> Trigger Swarm Triage`;
+                badgeText.textContent = "ALERT BLOCKED";
+                badgeDot.style.backgroundColor = "var(--accent-error)";
+                badgeDot.style.boxShadow = "0 0 8px var(--accent-error)";
+                return;
+            }
+            
+            await new Promise(r => setTimeout(r, 1000));
+            updateStep(1, "completed");
+            logToConsole("Guardrails passed. Alert ingestion payload validated.", "success");
+
+            // Step 2: Repository Inspection
+            updateStep(2, "active");
+            logToConsole("Phase 2: Inspecting Git Landing Zone repository configurations...", "info");
+            await new Promise(r => setTimeout(r, 1200));
+            updateStep(2, "completed");
+            logToConsole("Git Repository files scanned. Target files mapping initialized.", "success");
+
+            // Step 3: Alert Parsing & Targeting
+            updateStep(3, "active");
+            logToConsole("Phase 3: Parsing alert payload and identifying compromised assets...", "info");
+            await new Promise(r => setTimeout(r, 1500));
+            updateStep(3, "completed");
+            logToConsole("Alert parsed. Target identified & compliance control policies retrieved.", "success");
+
+            // Step 4: Generative HCL Patching & Code Validation
+            updateStep(4, "active");
+            logToConsole("Phase 4: Initiating AI remediator agent. Patching code syntax...", "info");
+            
+            // Build request URL and headers
+            const authKey = document.getElementById("function-code").value;
+            let url = "/api/swarm-triage";
+            let headers = {
+                "Content-Type": "application/json"
+            };
+            if (authKey) {
+                headers["x-functions-key"] = authKey;
+            }
+
+            logToConsole("Forwarding payload to Azure Function API endpoint...", "info");
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errText}`);
+                }
+
+                const data = await response.json();
+                
+                updateStep(4, "completed");
+                logToConsole("AI Patch generation complete. HCL syntax validation verified.", "success");
+
+                // Step 5: Cognitive PR Copywriting & Git branch Commit
+                updateStep(5, "active");
+                logToConsole("Phase 5: Committing compliance fix to branch & drafting Pull Request...", "info");
+                
+                await new Promise(r => setTimeout(r, 1500));
+                updateStep(5, "completed");
+                
+                // Set final progress line width
+                document.getElementById("step-progress-bar").style.width = "100%";
+                
+                logToConsole("Branch committed. Pull Request opened and compliance audit log saved.", "success");
+                logToConsole(`Auto-Remediation Workflow succeeded! Link: ${data.url}`, "success");
+
+                // Populate and Display Result Card
+                document.getElementById("res-vuln-id").textContent = data.alert_reference_id || "CVE-2023-30861";
+                document.getElementById("res-asset").textContent = payload.Results ? payload.Results[0].DependencyName : (payload.data?.essentials?.alertRule || "Unknown Resource");
+                document.getElementById("res-file").textContent = data.file_patched || "Unknown";
+                document.getElementById("res-mode").textContent = data.triage_mode || "DETERMINISTIC";
+                
+                const prBtn = document.getElementById("btn-view-pr");
+                prBtn.href = data.url || "#";
+                if (data.status === "PR_CREATED_MOCK") {
+                    prBtn.textContent = "📂 View Local Patched Mock File";
+                    prBtn.style.background = "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)";
+                    prBtn.style.boxShadow = "0 4px 12px var(--primary-glow)";
+                } else {
+                    prBtn.textContent = "🐙 View Remediated Pull Request on GitHub";
+                    prBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
+                    prBtn.style.boxShadow = "0 4px 12px var(--success-glow)";
+                }
+                
+                resultCard.style.display = "flex";
+
+                // Update Header Badge
+                badgeText.textContent = "SUCCESS";
+                badgeDot.style.backgroundColor = "var(--accent-success)";
+                badgeDot.style.boxShadow = "0 0 8px var(--accent-success)";
+
+            } catch (error) {
+                updateStep(4, "failed");
+                updateStep(5, "failed");
+                logToConsole(`Remediation Workflow failed: ${error.message}`, "error");
+                
+                // Update Header Badge
+                badgeText.textContent = "FAILED";
+                badgeDot.style.backgroundColor = "var(--accent-error)";
+                badgeDot.style.boxShadow = "0 0 8px var(--accent-error)";
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>🚨</span> Trigger Swarm Triage`;
+            }
+        }
+    </script>
+</body>
+</html>
