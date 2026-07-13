@@ -53,6 +53,13 @@ resource "azurerm_mssql_server_extended_auditing_policy" "sql_audit" {
   retention_in_days      = 91
 }
 
+resource "azurerm_mssql_firewall_rule" "sql_server_internal" {
+  name             = "AllowInternal10Net"
+  server_id        = azurerm_mssql_server.sql_server.id
+  start_ip_address = "10.0.0.0"
+  end_ip_address   = "10.255.255.255"
+}
+
 resource "azurerm_private_endpoint" "sql_server" {
   name                = "pe-sql-drift-test"
   location            = var.location
